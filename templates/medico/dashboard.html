@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Médico{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1><i class="fas fa-chart-line"></i> Dashboard 
+        {% if user_type == 'admin' %}Administrativo{% else %}Médico{% endif %}
+    </h1>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3>{{ total_pacientes }}</h3>
+                    <p class="mb-0">Pacientes Ativos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                    <h3>{{ sessoes_mes }}</h3>
+                    <p class="mb-0">Sessões (Este Mês)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                    <h3>R$ {{ "%.2f"|format(faturamento_mes) }}</h3>
+                    <p class="mb-0">Faturamento (Este Mês)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Histórico de Agendamentos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Histórico de Agendamentos</h5>
+                    <a href="{{ url_for('medico.agendamentos') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Ver Todos
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if agendamentos_recentes %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-user me-2"></i>Paciente</th>
+                                    <th><i class="fas fa-calendar-day me-2"></i>Data/Hora</th>
+                                    <th><i class="fas fa-info-circle me-2"></i>Status</th>
+                                    <th><i class="fas fa-phone me-2"></i>Telefone</th>
+                                    <th><i class="fas fa-note-sticky me-2"></i>Observações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for agendamento in agendamentos_recentes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ agendamento.paciente_nome }}</strong><br>
+                                        <small class="text-muted">{{ agendamento.paciente_cpf }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ agendamento.data_formatada or agendamento.data_consulta }}</strong><br>
+                                        {% if agendamento.hora_formatada %}
+                                        <small class="text-muted">{{ agendamento.hora_formatada }} ({{ agendamento.periodo or 'N/A' }})</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if agendamento.confirmado == 1 %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>Confirmado
+                                            </span>
+                                        {% elif agendamento.confirmado == 0 %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>Cancelado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i>Pendente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ agendamento.paciente_telefone or '-' }}</td>
+                                    <td>{{ agendamento.observacoes or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">Nenhum agendamento encontrado</h6>
+                        <p class="text-muted">Agendamentos dos seus pacientes aparecerão aqui.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Patients -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-clock"></i> Pacientes Recentes</h5>
+        </div>
+        <div class="card-body">
+            {% if pacientes_recentes %}
+                <div class="row">
+                    {% for paciente in pacientes_recentes %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-start border-primary border-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0 text-primary">
+                                        <i class="fas fa-user"></i> {{ paciente.nome }}
+                                    </h6>
+                                    <span class="badge bg-{{ 'success' if paciente.status == 'ativo' else 'secondary' }}">
+                                        {{ paciente.status.title() }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-id-card"></i> <strong>CPF:</strong> {{ paciente.cpf }}
+                                    </small>
+                                </div>
+                                
+
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> <strong>Local:</strong> {{ paciente.localizacao }}
+                                    </small>
+                                </div>
+                                
+                                {% if paciente.whatsapp %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-phone"></i> <strong>WhatsApp:</strong> {{ paciente.whatsapp }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Informações de Senhas -->
+                                <div class="mb-2">
+                                    <small class="fw-bold text-dark">
+                                        <i class="fas fa-key"></i> Senhas:
+                                    </small>
+                                    <div class="mt-1">
+                                        {% if paciente.senhas_aprovadas > 0 %}
+                                        <span class="badge bg-success me-1">
+                                            {{ paciente.senhas_aprovadas }} Aprovada(s)
+                                        </span>
+                                        {% endif %}
+                                        {% if paciente.senhas_pendentes > 0 %}
+                                        <span class="badge bg-warning me-1">
+                                            {{ paciente.senhas_pendentes }} Pendente(s)
+                                        </span>
+                                        {% endif %}
+                                        {% if not paciente.senhas_aprovadas and not paciente.senhas_pendentes %}
+                                        <span class="badge bg-secondary">Nenhuma senha</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if paciente.senhas_info %}
+                                    <div class="mt-1">
+                                        <small class="text-muted">{{ paciente.senhas_info }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> 
+                                        {% if paciente.data_criacao %}
+                                            {{ paciente.data_criacao[:10] }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </small>
+                                    <a href="{{ url_for('medico.sessoes', paciente_id=paciente.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i> Ver Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Nenhum paciente cadastrado ainda</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

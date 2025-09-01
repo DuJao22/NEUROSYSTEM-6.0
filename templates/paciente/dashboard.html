@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Perfil - {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1><i class="fas fa-user"></i> Meu Perfil</h1>
+    
+    <!-- Patient Info -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-id-card"></i> Informações Pessoais</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nome:</strong> {{ paciente.nome }}</p>
+                            <p><strong>CPF:</strong> {{ paciente.cpf }}</p>
+                            <p><strong>Localização:</strong> {{ paciente.localizacao }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Telefone:</strong> {{ paciente.telefone or 'Não informado' }}</p>
+                            <p><strong>Email:</strong> {{ paciente.email or 'Não informado' }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if paciente.get('status', 'ativo') == 'ativo' else 'secondary' }}">
+                                    {{ paciente.get('status', 'Ativo').title() }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    {% if paciente.medico_nome %}
+                    <hr>
+                    <p><strong>Médico Responsável:</strong> {{ paciente.medico_nome }}</p>
+                    {% if paciente.medico_email %}
+                    <p><strong>Email do Médico:</strong> {{ paciente.medico_email }}</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Resumo do Tratamento</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <h3 class="text-primary">{{ sessoes|length }}/8</h3>
+                        <p class="mb-0">Sessões Realizadas</p>
+                    </div>
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ (sessoes|length / 8 * 100)|round }}%"
+                             aria-valuenow="{{ sessoes|length }}" aria-valuemin="0" aria-valuemax="8">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h4 class="text-success">{{ senhas|length }}</h4>
+                        <p class="mb-0">Senhas Utilizadas</p>
+                    </div>
+                    <div>
+                        <h4 class="text-info">{{ laudos|length }}</h4>
+                        <p class="mb-0">Laudos Disponíveis</p>
+                    </div>
+                    <hr>
+                    <div class="d-grid">
+                        <a href="{{ url_for('paciente.perfil_completo') }}" class="btn btn-primary">
+                            <i class="fas fa-user-circle me-2"></i>Ver Perfil Completo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Confirmations Section - Enhanced -->
+    {% if confirmacoes_pendentes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning shadow-lg">
+                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #ff9a00 0%, #ff6b35 100%);">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Ação Necessária - Confirmação de Consultas
+                        <span class="badge bg-light text-dark ms-2">{{ confirmacoes_pendentes|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info border-0" style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <i class="fas fa-info-circle fa-2x text-info"></i>
+                            </div>
+                            <div class="col">
+                                <h6 class="mb-1"><strong>Confirmação Obrigatória</strong></h6>
+                                <p class="mb-0">Suas consultas precisam ser confirmadas <strong>3 dias antes</strong> da data agendada. Confirme sua presença ou informe se não poderá comparecer.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% for confirmacao in confirmacoes_pendentes %}
+                    <div class="card mb-3 border-0 shadow-sm">
+                        <div class="card-body" style="background: linear-gradient(135deg, #fff8e1 0%, #f3e5f5 100%);">
+                            <div class="row align-items-center">
+                                <div class="col-md-7">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-primary text-white rounded-circle p-2 me-3">
+                                            <i class="fas fa-user-md"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 text-primary">{{ confirmacao.medico_nome }}</h6>
+                                            <small class="text-muted">Consulta Agendada</small>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="alert alert-info border-0 mb-0" style="background: linear-gradient(135deg, #e8f4f8 0%, #f0f8ff 100%);">
+                                            <div class="row align-items-center">
+                                                <div class="col-auto">
+                                                    <i class="fas fa-calendar-alt fa-2x text-primary"></i>
+                                                </div>
+                                                <div class="col">
+                                                    <h6 class="mb-1 text-primary fw-bold">Consulta marcada para:</h6>
+                                                    <p class="mb-1"><strong>{{ confirmacao.data_completa }}</strong></p>
+                                                    <p class="mb-0">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        <strong>{{ confirmacao.hora_formatada }}</strong> 
+                                                        <span class="badge bg-secondary ms-2">{{ confirmacao.periodo }}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <i class="fas fa-user-md text-success me-2"></i>
+                                        <strong>Profissional:</strong> Dr(a). {{ confirmacao.medico_nome }}
+                                    </div>
+                                    {% if confirmacao.observacoes %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-note-sticky text-warning me-2"></i>
+                                        <strong>Observações:</strong> {{ confirmacao.observacoes }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="d-grid gap-2">
+                                        <!-- Confirmar Consulta Diretamente -->
+                                        <form method="POST" action="{{ url_for('paciente.confirmar_consulta_route', confirmacao_id=confirmacao.confirmacao_id) }}" style="margin: 0;">
+                                            <input type="hidden" name="confirmado" value="1">
+                                            <button type="submit" class="btn btn-success btn-lg shadow-sm w-100" 
+                                                    style="border-radius: 15px; font-weight: 600;">
+                                                <i class="fas fa-check-circle me-2"></i>Confirmar Presença
+                                            </button>
+                                        </form>
+                                        
+                                        <!-- Cancelar Consulta Diretamente -->
+                                        <form method="POST" action="{{ url_for('paciente.confirmar_consulta_route', confirmacao_id=confirmacao.confirmacao_id) }}" style="margin: 0;">
+                                            <input type="hidden" name="confirmado" value="0">
+                                            <button type="submit" class="btn btn-outline-danger btn-lg shadow-sm w-100" 
+                                                    style="border-radius: 15px; font-weight: 600;">
+                                                <i class="fas fa-times-circle me-2"></i>Não Posso Ir
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Histórico de Agendamentos - Tabela -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Histórico de Agendamentos</h5>
+                </div>
+                <div class="card-body">
+                    {% if todas_consultas %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-calendar-day me-2"></i>Data/Hora</th>
+                                    <th><i class="fas fa-user-md me-2"></i>Médico</th>
+                                    <th><i class="fas fa-info-circle me-2"></i>Status</th>
+                                    <th><i class="fas fa-note-sticky me-2"></i>Observações</th>
+                                    <th><i class="fas fa-comment me-2"></i>Suas Observações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consulta in todas_consultas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ consulta.data_formatada or consulta.data_consulta }}</strong><br>
+                                        {% if consulta.hora_formatada %}
+                                        <small class="text-muted">{{ consulta.hora_formatada }} ({{ consulta.periodo or 'N/A' }})</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ consulta.medico_nome }}</strong><br>
+                                        <small class="text-muted">{{ consulta.medico_tipo|title if consulta.medico_tipo else 'Médico' }}</small>
+                                    </td>
+                                    <td>
+                                        {% if consulta.confirmado == 1 %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>Confirmado
+                                            </span>
+                                        {% elif consulta.confirmado == 0 %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>Cancelado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i>Pendente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ consulta.observacoes or '-' }}</td>
+                                    <td>{{ consulta.observacoes_paciente or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum agendamento encontrado</h5>
+                        <p class="text-muted">Suas consultas aparecerão aqui quando forem agendadas pelo seu médico.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-check"></i> Minhas Sessões</h5>
+                </div>
+                <div class="card-body">
+                    {% if sessoes %}
+                        <div class="list-group">
+                            {% for sessao in sessoes %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Sessão {{ sessao.numero_sessao }}</h6>
+                                    <small>{{ sessao.data_sessao }}</small>
+                                </div>
+                                {% if sessao.observacoes %}
+                                <p class="mb-0 text-muted">{{ sessao.observacoes }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Nenhuma sessão registrada ainda</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Insurance Codes -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-key"></i> Senhas Utilizadas</h5>
+                </div>
+                <div class="card-body">
+                    {% if senhas %}
+                        <div class="list-group">
+                            {% for senha in senhas %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        {% if senha.tipo == 'teste_neuropsicologico' %}
+                                            <span class="badge bg-primary me-2">Teste Neuropsicológico</span>
+                                        {% elif senha.tipo == 'consulta_sessao' %}
+                                            <span class="badge bg-info me-2">Consulta/Sessão</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary me-2">{{ senha.tipo.title() }}</span>
+                                        {% endif %}
+                                        <span class="badge bg-{{ 'success' if senha.aprovada_admin else 'warning' }}">
+                                            {{ 'Aprovada' if senha.aprovada_admin else 'Pendente' }}
+                                        </span>
+                                    </div>
+                                    <small>{{ senha.data_criacao[:10] if senha.data_criacao else '-' }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Nenhuma senha utilizada</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-pdf"></i> Meus Laudos</h5>
+                </div>
+                <div class="card-body">
+                    {% if laudos %}
+                        <div class="row">
+                            {% for laudo in laudos %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                        <h6 class="card-title">Laudo</h6>
+                                        <p class="card-text small text-muted">
+                                            {{ laudo.data_upload[:10] if laudo.data_upload else '' }}
+                                        </p>
+                                        <a href="{{ url_for('paciente.download_laudo', laudo_id=laudo.id) }}" 
+                                           class="btn btn-primary">
+                                            <i class="fas fa-download"></i> Baixar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-file-pdf fa-4x text-muted mb-3"></i>
+                            <p class="text-muted">Seus laudos aparecerão aqui quando estiverem prontos</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Sistema de confirmação direta inicializado');
+});
+</script>
+{% endblock %}

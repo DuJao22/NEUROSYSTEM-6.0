@@ -1,0 +1,949 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrativo{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 100%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: none;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--gradient-color, linear-gradient(90deg, #667eea, #764ba2));
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .metric-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .metric-card:hover::after {
+        opacity: 1;
+    }
+    
+    .metric-card.primary-card::before {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+    }
+    
+    .metric-card.success-card::before {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+    }
+    
+    .metric-card.info-card::before {
+        background: linear-gradient(135deg, #17a2b8, #117a8b);
+    }
+    
+    .metric-card.warning-card::before {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+    }
+    
+    .metric-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-icon::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        background: inherit;
+        border-radius: 50%;
+        z-index: -1;
+        filter: blur(8px);
+        opacity: 0.6;
+    }
+    
+    .metric-card:hover .metric-icon {
+        transform: scale(1.1);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .metric-icon.primary { 
+        background: linear-gradient(135deg, #007bff, #0056b3); 
+        color: white; 
+    }
+    .metric-icon.success { 
+        background: linear-gradient(135deg, #28a745, #1e7e34); 
+        color: white; 
+    }
+    .metric-icon.info { 
+        background: linear-gradient(135deg, #17a2b8, #117a8b); 
+        color: white; 
+    }
+    .metric-icon.warning { 
+        background: linear-gradient(135deg, #ffc107, #e0a800); 
+        color: white; 
+    }
+    
+    .metric-value {
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin: 0.5rem 0;
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .metric-value::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 30px;
+        height: 3px;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border-radius: 2px;
+        opacity: 0.7;
+    }
+    
+    .metric-card.primary-card .metric-value::after {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+    }
+    
+    .metric-card.success-card .metric-value::after {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+    }
+    
+    .metric-card.info-card .metric-value::after {
+        background: linear-gradient(135deg, #17a2b8, #117a8b);
+    }
+    
+    .metric-card.warning-card .metric-value::after {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+    }
+    
+    .metric-label {
+        color: #495057;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .metric-detail {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .metric-detail::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #28a745;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.2); }
+    }
+    
+    /* Enhanced metric card responsiveness */
+    @media (max-width: 1200px) {
+        .metric-value {
+            font-size: 2.4rem;
+        }
+        
+        .metric-icon {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .metric-card {
+            padding: 1.5rem;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+        }
+        
+        .metric-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+    }
+    
+    /* Loading state animations */
+    .metric-card.loading .metric-value {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 8px;
+        -webkit-background-clip: initial;
+        -webkit-text-fill-color: initial;
+        color: transparent;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    /* Special effects for different card states */
+    .metric-card.success-card .metric-detail::before {
+        background: #28a745;
+    }
+    
+    .metric-card.primary-card .metric-detail::before {
+        background: #007bff;
+    }
+    
+    .metric-card.info-card .metric-detail::before {
+        background: #17a2b8;
+    }
+    
+    .metric-card.warning-card .metric-detail::before {
+        background: #ffc107;
+    }
+    
+    .action-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .action-card:hover {
+        background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        transform: translateY(-2px);
+    }
+    
+    .action-btn {
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: block;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .action-btn:hover::before {
+        left: 100%;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .quick-stats {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        border: none;
+    }
+    
+    .stat-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f3f4;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    .stat-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .stat-value {
+        color: #28a745;
+        font-weight: 700;
+    }
+    
+    .loading-shimmer {
+        background: linear-gradient(90deg, #f0f0f0 25%, transparent 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 0.75rem;
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    /* Responsive optimizations */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .metric-card {
+            margin-bottom: 1rem;
+        }
+        
+        .metric-icon {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+        }
+        
+        .action-card {
+            padding: 1rem;
+        }
+        
+        .quick-stats {
+            padding: 1rem;
+        }
+        
+        .stat-item {
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+        
+        .stat-value {
+            margin-top: 0.25rem;
+        }
+    }
+    
+    /* Dark mode improvements */
+    [data-bs-theme="dark"] .metric-card {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    [data-bs-theme="dark"] .action-card {
+        background: linear-gradient(135deg, #2d3748, #4a5568);
+    }
+    
+    [data-bs-theme="dark"] .quick-stats {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    [data-bs-theme="dark"] .activity-item {
+        background: #4a5568;
+        border-left-color: #63b3ed;
+    }
+    
+    [data-bs-theme="dark"] .activity-item:hover {
+        background: #2d3748;
+    }
+    
+    /* Performance optimizations */
+    .metric-card, .action-card, .quick-stats {
+        will-change: transform, box-shadow;
+    }
+    
+    /* Loading states */
+    .dashboard-loading .metric-value {
+        background: linear-gradient(90deg, #f0f0f0, #e0e0e0, #f0f0f0);
+        background-size: 200% 100%;
+        animation: loading-shimmer 1.5s infinite;
+        border-radius: 4px;
+        color: transparent;
+    }
+    
+    @keyframes loading-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-chart-line me-3"></i>
+                    Dashboard Administrativo
+                </h1>
+                <p class="mb-0 opacity-75">
+                    Visão geral completa do sistema neuropsicológico
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Key Metrics - Enhanced Design -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card primary-card">
+                <div class="text-center">
+                    <div class="metric-icon primary">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="metric-label">Médicos Ativos</div>
+                    <div class="metric-value" id="totalMedicos">{{ total_medicos or 0 }}</div>
+                    <div class="metric-detail">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Sistema ativo
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card success-card">
+                <div class="text-center">
+                    <div class="metric-icon success">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="metric-label">Pacientes Ativos</div>
+                    <div class="metric-value" id="totalPacientes">{{ total_pacientes or 0 }}</div>
+                    <div class="metric-detail">
+                        <i class="fas fa-heart me-1"></i>
+                        Em tratamento
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card info-card">
+                <div class="text-center">
+                    <div class="metric-icon info">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <div class="metric-label">Equipes Ativas</div>
+                    <div class="metric-value" id="totalEquipes">{{ total_equipes or 0 }}</div>
+                    <div class="metric-detail">
+                        <i class="fas fa-handshake me-1"></i>
+                        Colaborando
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card warning-card">
+                <div class="text-center">
+                    <div class="metric-icon warning">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="metric-label">Senhas Pendentes</div>
+                    <div class="metric-value" id="senhasPendentes">{{ financeiro.senhas_pendentes or 0 }}</div>
+                    <div class="metric-detail">
+                        <i class="fas fa-dollar-sign me-1"></i>
+                        R$ {{ "%.2f"|format(financeiro.valor_pendente or 0) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="action-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-bar text-primary me-2"></i>
+                    Dashboards Avançados
+                </h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <a href="{{ url_for('relatorios.admin_dashboard') }}" class="action-btn btn btn-primary w-100">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Dashboard Completo
+                            <small class="d-block mt-1 opacity-75">Análise detalhada</small>
+                        </a>
+                    </div>
+                    <div class="col-sm-6">
+                        <a href="{{ url_for('financeiro.faturamento') }}" class="action-btn btn btn-success w-100">
+                            <i class="fas fa-money-bill-wave me-2"></i>
+                            Relatório Financeiro
+                            <small class="d-block mt-1 opacity-75">Pagamentos e lucros</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="action-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-tools text-info me-2"></i>
+                    Ações Rápidas
+                </h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <a href="{{ url_for('admin_senhas.senhas_pendentes') }}" class="action-btn btn btn-warning w-100">
+                            <i class="fas fa-key me-2"></i>
+                            Aprovar Senhas
+                            <small class="d-block mt-1 opacity-75">{{ financeiro.senhas_pendentes or 0 }} pendentes</small>
+                        </a>
+                    </div>
+                    <div class="col-sm-6">
+                        <a href="{{ url_for('admin.configuracoes') }}" class="action-btn btn btn-info w-100">
+                            <i class="fas fa-cog me-2"></i>
+                            Configurações
+                            <small class="d-block mt-1 opacity-75">Sistema</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="metric-card success-card">
+                <div class="d-flex align-items-center">
+                    <div class="metric-icon success">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="metric-label">Faturamento Bruto</div>
+                        <div class="metric-value">R$ {{ "%.2f"|format(financeiro.faturamento_bruto or 0) }}</div>
+                        <div class="metric-detail">
+                            {{ financeiro.total_senhas_aprovadas or 0 }} senhas aprovadas
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 85%;"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Meta mensal: 85%</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="metric-card primary-card">
+                <div class="d-flex align-items-center">
+                    <div class="metric-icon primary">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="metric-label">Lucro Líquido</div>
+                        <div class="metric-value">R$ {{ "%.2f"|format(financeiro.faturamento_liquido or 0) }}</div>
+                        <div class="metric-detail">
+                            Após pagamentos médicos
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" style="width: 72%;"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Margem: 72%</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="metric-card info-card">
+                <div class="d-flex align-items-center">
+                    <div class="metric-icon info">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="metric-label">Sessões Realizadas</div>
+                        <div class="metric-value">{{ financeiro.sessoes_realizadas or 0 }}/{{ financeiro.total_sessoes or 0 }}</div>
+                        <div class="metric-detail">
+                            {{ financeiro.mes_referencia or 'Mês atual' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% set percent_sessoes = ((financeiro.sessoes_realizadas or 0) / (financeiro.total_sessoes or 1) * 100) | round %}
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: {{ percent_sessoes }}%;"></div>
+                    </div>
+                    <small class="text-muted mt-1 d-block">Progresso: {{ percent_sessoes }}%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Overview and Recent Activities -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="quick-stats">
+                <h5 class="mb-4">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    Resumo do Sistema
+                </h5>
+                
+                <div class="stat-item">
+                    <span class="stat-label">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Senhas Aprovadas
+                    </span>
+                    <span class="stat-value">{{ financeiro.total_senhas_aprovadas or 0 }}</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        Senhas Pendentes
+                    </span>
+                    <span class="stat-value text-warning">{{ financeiro.senhas_pendentes or 0 }}</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">
+                        <i class="fas fa-calendar-check text-info me-2"></i>
+                        Sessões do Mês
+                    </span>
+                    <span class="stat-value">{{ financeiro.total_sessoes or 0 }}</span>
+                </div>
+                
+                <div class="stat-item">
+                    <span class="stat-label">
+                        <i class="fas fa-chart-line text-success me-2"></i>
+                        Sessões Realizadas
+                    </span>
+                    <span class="stat-value">{{ financeiro.sessoes_realizadas or 0 }}</span>
+                </div>
+                
+                {% if financeiro.senhas_pendentes > 0 %}
+                <div class="mt-3 p-3 bg-warning bg-opacity-10 border border-warning rounded">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span>
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            <strong>{{ financeiro.senhas_pendentes }} senhas pendentes</strong>
+                        </span>
+                        <a href="{{ url_for('admin_senhas.senhas_pendentes') }}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-arrow-right me-1"></i>
+                            Revisar
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="quick-stats">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        Atividades Recentes
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshActivities()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <div id="activitiesContainer">
+                    {% if atividades_recentes %}
+                        {% for atividade in atividades_recentes %}
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ atividade.paciente }}</h6>
+                                <small class="text-muted">{{ atividade.data_sessao }}</small>
+                            </div>
+                            <p class="mb-1 text-muted">
+                                <i class="fas fa-user-md me-1"></i>
+                                Dr(a). {{ atividade.medico }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-primary">
+                                    <i class="fas fa-calendar-check me-1"></i>
+                                    Sessão {{ atividade.numero_sessao }}
+                                </small>
+                                <span class="badge bg-success bg-opacity-10 text-success">Concluída</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-3 opacity-50"></i>
+                            <p class="mb-0">Nenhuma atividade recente</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced Dashboard with Performance Optimizations
+class DashboardManager {
+    constructor() {
+        this.initializeComponents();
+        this.setupEventListeners();
+        this.startPerformanceMonitoring();
+    }
+    
+    initializeComponents() {
+        // Set current date
+        this.updateCurrentDate();
+        
+        // Animate counter values
+        this.animateCounters();
+        
+        // Load dashboard data
+        this.loadDashboardData();
+        
+        // Setup auto-refresh
+        this.setupAutoRefresh();
+    }
+    
+    updateCurrentDate() {
+        const dateElement = document.getElementById('currentDate');
+        if (dateElement) {
+            const now = new Date();
+            dateElement.textContent = now.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+    }
+    
+    animateCounters() {
+        const counters = document.querySelectorAll('.metric-value');
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px 0px -100px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+                    this.animateCounter(entry.target);
+                }
+            });
+        }, observerOptions);
+        
+        counters.forEach(counter => observer.observe(counter));
+    }
+    
+    animateCounter(element) {
+        element.classList.add('animated');
+        const target = parseInt(element.textContent) || 0;
+        let current = 0;
+        const increment = target / 50;
+        const duration = 1500;
+        const stepTime = duration / 50;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            element.textContent = Math.floor(current);
+        }, stepTime);
+    }
+    
+    loadDashboardData() {
+        // Add loading states
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.classList.add('loading');
+        });
+        
+        // Simulate API call completion after short delay
+        setTimeout(() => {
+            document.querySelectorAll('.metric-card').forEach(card => {
+                card.classList.remove('loading');
+            });
+        }, 500);
+    }
+    
+    setupAutoRefresh() {
+        // Refresh every 5 minutes
+        setInterval(() => {
+            this.refreshMetrics();
+        }, 300000);
+    }
+    
+    refreshMetrics() {
+        console.log('Refreshing dashboard metrics...');
+        // Add subtle animation to indicate refresh
+        document.querySelectorAll('.metric-value').forEach(value => {
+            value.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                value.style.transform = 'scale(1)';
+            }, 200);
+        });
+    }
+    
+    setupEventListeners() {
+        // Add hover effects for metric cards
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+        
+        // Add click effects
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.addEventListener('click', () => {
+                card.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    card.style.transform = 'translateY(-10px) scale(1.02)';
+                }, 150);
+            });
+        });
+    }
+    
+    startPerformanceMonitoring() {
+        if (performance && performance.timing) {
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            console.log(`Dashboard loaded in ${loadTime}ms`);
+        }
+    }
+}
+
+// Global functions
+function refreshActivities() {
+    const container = document.getElementById('activitiesContainer');
+    if (container) {
+        container.style.opacity = '0.5';
+        // Simulate refresh
+        setTimeout(() => {
+            container.style.opacity = '1';
+        }, 1000);
+    }
+}
+
+// Initialize dashboard when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    new DashboardManager();
+    
+    // Add loading completion class
+    document.body.classList.add('dashboard-loaded');
+});
+
+console.log('Enhanced Admin Dashboard loaded successfully');
+</script>
+{% endblock %}
+            { id: 'totalEquipes', target: {{ total_equipes or 0 }} },
+            { id: 'senhasPendentes', target: {{ financeiro.senhas_pendentes or 0 }} }
+        ];

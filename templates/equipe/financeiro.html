@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório Financeiro da Equipe{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chart-line"></i> Relatório Financeiro - {{ equipe.nome }}</h1>
+        <a href="{{ url_for('equipe.dashboard') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+        </a>
+    </div>
+    
+    <!-- Monthly Billing Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-calendar-alt"></i> Histórico Mensal de Faturamento</h5>
+        </div>
+        <div class="card-body">
+            {% if billing_monthly %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mês</th>
+                                <th>Total de Senhas</th>
+                                <th>Faturamento Bruto</th>
+                                <th>Participação da Equipe ({{ equipe.porcentagem_participacao }}%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mes in billing_monthly %}
+                            <tr>
+                                <td>{{ mes.mes_referencia }}</td>
+                                <td>{{ mes.total_senhas }}</td>
+                                <td>R$ {{ "%.2f"|format(mes.total_bruto) }}</td>
+                                <td>R$ {{ "%.2f"|format(mes.total_equipe) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Nenhum dado de faturamento encontrado para esta equipe.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Financial history overview
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Relatório financeiro da equipe carregado:', {
+        equipe: '{{ equipe.nome }}',
+        porcentagem: {{ equipe.porcentagem_participacao }},
+        meses_dados: {{ billing_monthly|length }}
+    });
+});
+</script>
+{% endblock %}

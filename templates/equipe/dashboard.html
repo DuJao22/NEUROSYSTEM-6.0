@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard da Equipe{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1><i class="fas fa-users-cog"></i> Dashboard - {{ equipe.nome }}</h1>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-md fa-2x mb-2"></i>
+                    <h3>{{ total_medicos }}</h3>
+                    <p class="mb-0">Médicos na Equipe</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3>{{ total_pacientes }}</h3>
+                    <p class="mb-0">Pacientes Ativos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-percentage fa-2x mb-2"></i>
+                    <h3>{{ equipe.porcentagem_participacao }}%</h3>
+                    <p class="mb-0">Participação</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-key fa-2x mb-2"></i>
+                    <h3>{{ financeiro.senhas_pendentes or 0 }}</h3>
+                    <p class="mb-0">Senhas Pendentes</p>
+                    <small class="text-muted">R$ {{ "%.2f"|format(financeiro.valor_pendente or 0) }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Relatórios Avançados da Equipe -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-gradient-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Dashboard Avançado da Equipe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="d-grid">
+                                <a href="{{ url_for('relatorios.equipe_dashboard') }}" class="btn btn-info btn-lg">
+                                    <i class="fas fa-analytics me-2"></i>
+                                    Dashboard Completo da Equipe
+                                    <br><small>Performance de médicos, faturamento detalhado e ranking</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Financial Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign fa-3x mb-3"></i>
+                    <h2>R$ {{ "%.2f"|format(financeiro.faturamento_total or 0) }}</h2>
+                    <h5 class="mb-0">Faturamento Total da Equipe</h5>
+                    <small>{{ financeiro.total_senhas or 0 }} senhas aprovadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-handshake fa-3x mb-3"></i>
+                    <h2>R$ {{ "%.2f"|format(financeiro.valor_parceria or 0) }}</h2>
+                    <h5 class="mb-0">Valor da Parceria</h5>
+                    <small>{{ financeiro.porcentagem_equipe or 0 }}% do faturamento</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                    <h2>{{ total_medicos or 0 }}</h2>
+                    <h5 class="mb-0">Médicos na Equipe</h5>
+                    <small>{{ total_pacientes or 0 }} pacientes ativos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Financial Overview -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Resumo Financeiro (Mês Atual)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Senhas Aprovadas:</strong> {{ financeiro.total_senhas or 0 }}</p>
+                            <p><strong>Senhas Pendentes:</strong> {{ financeiro.senhas_pendentes or 0 }}</p>
+                            <p><strong>Porcentagem da Equipe:</strong> {{ financeiro.porcentagem_equipe or 0 }}%</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Faturamento Total:</strong> R$ {{ "%.2f"|format(financeiro.faturamento_total or 0) }}</p>
+                            <p><strong>Valor da Parceria:</strong> R$ {{ "%.2f"|format(financeiro.valor_parceria or 0) }}</p>
+                            <p><strong>Valor Pendente:</strong> R$ {{ "%.2f"|format(financeiro.valor_pendente or 0) }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if financeiro.senhas_pendentes > 0 %}
+                    <div class="alert alert-warning mt-3">
+                        <strong>Atenção:</strong> Existem {{ financeiro.senhas_pendentes }} senhas da sua equipe pendentes de aprovação pelo admin.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Atividades Recentes</h5>
+                </div>
+                <div class="card-body">
+                    {% if atividades_recentes %}
+                        <div class="list-group">
+                            {% for atividade in atividades_recentes[:5] %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ atividade.paciente }}</h6>
+                                    <small>{{ atividade.data_sessao }}</small>
+                                </div>
+                                <p class="mb-1">Sessão {{ atividade.numero_sessao }}</p>
+                                <small class="text-muted">Dr(a). {{ atividade.medico }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Nenhuma atividade recente</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Ações Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('equipe.medicos') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-user-md"></i><br>
+                                Gerenciar Médicos
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('medico.pacientes') }}" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-users"></i><br>
+                                Ver Pacientes
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('equipe.financeiro') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-chart-line"></i><br>
+                                Relatório Financeiro
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('financeiro.faturamento') }}" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-money-bill"></i><br>
+                                Faturamento
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dashboard da equipe financial overview
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard da equipe carregado com dados financeiros:', {
+        faturamento_total: {{ financeiro.faturamento_total or 0 }},
+        valor_parceria: {{ financeiro.valor_parceria or 0 }},
+        total_senhas: {{ financeiro.total_senhas or 0 }},
+        senhas_pendentes: {{ financeiro.senhas_pendentes or 0 }}
+    });
+});
+</script>
+{% endblock %}

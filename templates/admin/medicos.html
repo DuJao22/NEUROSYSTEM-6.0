@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Médicos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-user-md"></i> Gerenciar Médicos</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMedicoModal">
+            <i class="fas fa-plus"></i> Adicionar Médico
+        </button>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Equipe</th>
+                            <th>Valor/Sessão</th>
+                            <th>Data Criação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medico in medicos %}
+                        <tr>
+                            <td data-label="Nome">{{ medico.nome }}</td>
+                            <td data-label="Email">{{ medico.email }}</td>
+                            <td data-label="Tipo">
+                                <span class="badge bg-{{ 'danger' if medico.tipo == 'admin' else 'warning' if medico.tipo == 'admin_equipe' else 'secondary' }}">
+                                    {{ medico.tipo.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td data-label="Equipe">{{ medico.equipe_nome or 'Sem equipe' }}</td>
+                            <td data-label="Valor/Sessão">R$ {{ "%.2f"|format(medico.valor_sessao) }}</td>
+                            <td data-label="Data Criação">{{ medico.data_criacao[:10] if medico.data_criacao else '' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editMedico({{ medico.id }}, '{{ medico.nome }}', '{{ medico.email }}', '{{ medico.tipo }}', {{ medico.equipe_id or 'null' }}, {{ medico.valor_sessao }})" data-bs-toggle="modal" data-bs-target="#editMedicoModal" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteMedico({{ medico.id }}, '{{ medico.nome }}')" data-bs-toggle="modal" data-bs-target="#deleteMedicoModal" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Medico Modal -->
+<div class="modal fade" id="addMedicoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Médico</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_medico') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" name="nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="senha" class="form-label">Senha</label>
+                        <input type="password" class="form-control" name="senha" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipo" class="form-label">Tipo</label>
+                        <select class="form-select" name="tipo" required>
+                            <option value="medico">Médico</option>
+                            <option value="admin_equipe">Admin de Equipe</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="equipe_id" class="form-label">Equipe (opcional)</label>
+                        <select class="form-select" name="equipe_id">
+                            <option value="">Sem equipe</option>
+                            {% for equipe in equipes %}
+                            <option value="{{ equipe.id }}">{{ equipe.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="valor_sessao" class="form-label">Valor por Sessão (R$)</label>
+                        <input type="number" class="form-control" name="valor_sessao" step="0.01" value="30.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Medico Modal -->
+<div class="modal fade" id="editMedicoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Médico</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editMedicoForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_nome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" name="nome" id="edit_nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" id="edit_email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_tipo" class="form-label">Tipo</label>
+                        <select class="form-select" name="tipo" id="edit_tipo" required>
+                            <option value="medico">Médico</option>
+                            <option value="admin_equipe">Admin de Equipe</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_equipe_id" class="form-label">Equipe</label>
+                        <select class="form-select" name="equipe_id" id="edit_equipe_id">
+                            <option value="">Sem equipe</option>
+                            {% for equipe in equipes %}
+                            <option value="{{ equipe.id }}">{{ equipe.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_valor_sessao" class="form-label">Valor por Sessão (R$)</label>
+                        <input type="number" class="form-control" name="valor_sessao" id="edit_valor_sessao" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_nova_senha" class="form-label">Nova Senha</label>
+                        <input type="password" class="form-control" name="nova_senha" id="edit_nova_senha">
+                        <div class="form-text">Deixe em branco para manter a senha atual</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Medico Modal -->
+<div class="modal fade" id="deleteMedicoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o médico <strong id="deleteMedicoName"></strong>?</p>
+                <p class="text-muted">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="deleteMedicoForm" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editMedico(id, nome, email, tipo, equipe_id, valor_sessao) {
+    document.getElementById('editMedicoForm').action = '/admin/medicos/edit/' + id;
+    document.getElementById('edit_nome').value = nome;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_tipo').value = tipo;
+    document.getElementById('edit_equipe_id').value = equipe_id || '';
+    document.getElementById('edit_valor_sessao').value = valor_sessao;
+    document.getElementById('edit_nova_senha').value = '';
+}
+
+function confirmDeleteMedico(id, nome) {
+    document.getElementById('deleteMedicoForm').action = '/admin/medicos/delete/' + id;
+    document.getElementById('deleteMedicoName').textContent = nome;
+}
+</script>
+
+{% endblock %}

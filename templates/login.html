@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Sistema Neuropsicológico{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4><i class="fas fa-brain"></i> Sistema Neuropsicológico</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="user_type" class="form-label">Tipo de Usuário</label>
+                            <select class="form-select" id="user_type" name="user_type" required>
+                                <option value="medico">Equipe Médica</option>
+                                <option value="paciente">Paciente</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email_or_cpf" class="form-label">
+                                <span id="login_label">Email</span>
+                            </label>
+                            <input type="text" class="form-control" id="email_or_cpf" name="email_or_cpf" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <span id="password_label">Senha</span>
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Entrar
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            <strong>Pacientes:</strong> Use seu CPF como login e senha<br>
+                            <strong>Equipe Médica:</strong> Use seu email e senha cadastrados
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('user_type').addEventListener('change', function() {
+    const userType = this.value;
+    const loginLabel = document.getElementById('login_label');
+    const passwordLabel = document.getElementById('password_label');
+    const emailInput = document.getElementById('email_or_cpf');
+    
+    if (userType === 'paciente') {
+        loginLabel.textContent = 'CPF';
+        passwordLabel.textContent = 'CPF';
+        emailInput.placeholder = '000.000.000-00';
+        emailInput.type = 'text';
+    } else {
+        loginLabel.textContent = 'Email';
+        passwordLabel.textContent = 'Senha';
+        emailInput.placeholder = 'seu@email.com';
+        emailInput.type = 'email';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Senhas Pendentes - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">
+            <i class="fas fa-key"></i> Senhas Pendentes de Aprovação
+        </h1>
+        <div id="approvalButtonContainer">
+            <!-- Botão será movido para dentro do formulário -->
+        </div>
+    </div>
+
+    {% if senhas_pendentes %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Importante:</strong> Apenas senhas aprovadas serão incluídas no faturamento da clínica e nos cálculos de pagamento das equipes.
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="aprovarLoteForm" method="POST" action="{{ url_for('admin_senhas.aprovar_lote') }}">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                <th>Tipo</th>
+                                {% if session.user_type == 'admin' %}
+                                <th>Valor</th>
+                                {% endif %}
+                                <th>Paciente</th>
+                                <th>Médico</th>
+                                <th>Equipe</th>
+                                <th>Data</th>
+                                <th width="200">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for senha in senhas_pendentes %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="senha_ids" value="{{ senha.id }}" class="form-check-input senha-checkbox">
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ senha.tipo.replace('_', ' ').title() if senha.tipo else 'Não definido' }}</span>
+                                </td>
+                                {% if session.user_type == 'admin' %}
+                                <td>
+                                    <span class="badge bg-success">R$ {{ "%.2f"|format(senha.valor) }}</span>
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <strong>{{ senha.paciente_nome }}</strong><br>
+                                    <small class="text-muted">{{ senha.paciente_cpf }}</small>
+                                </td>
+                                <td>{{ senha.medico_nome }}</td>
+                                <td>
+                                    {% if senha.equipe_nome %}
+                                        <span class="badge bg-primary">{{ senha.equipe_nome }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Externo</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ senha.data_criacao }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-success" title="Aprovar" onclick="aprovarUnica({{ senha.id }})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" title="Reprovar" onclick="reprovarUnica({{ senha.id }})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Botão de aprovação dentro do formulário -->
+                <div class="text-end mt-3">
+                    <button type="button" class="btn btn-success" onclick="aprovarTodas()">
+                        <i class="fas fa-check-double"></i> Aprovar Selecionadas
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ senhas_pendentes|length }}</h4>
+                    <p class="mb-0">Senhas Pendentes</p>
+                </div>
+            </div>
+        </div>
+        {% if session.user_type == 'admin' %}
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>R$ {{ "%.2f"|format(senhas_pendentes|sum(attribute='valor')) }}</h4>
+                    <p class="mb-0">Valor Total</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ (senhas_pendentes|selectattr('equipe_nome')|list)|length }}</h4>
+                    <p class="mb-0">Senhas de Equipe</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ (senhas_pendentes|rejectattr('equipe_nome')|list)|length }}</h4>
+                    <p class="mb-0">Médicos Externos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+        <h4>Todas as senhas estão aprovadas!</h4>
+        <p class="text-muted">Não há senhas pendentes de aprovação no momento.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.senha-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+});
+
+function aprovarTodas() {
+    const checked = document.querySelectorAll('.senha-checkbox:checked');
+    console.log('Senhas selecionadas:', checked.length);
+    console.log('Checkboxes encontrados:', checked);
+    
+    if (checked.length === 0) {
+        alert('Selecione pelo menos uma senha para aprovar');
+        return;
+    }
+    
+    // Debug: mostrar os valores que serão enviados
+    const valores = [];
+    checked.forEach(cb => {
+        valores.push(cb.value);
+        console.log('Checkbox value:', cb.value, 'checked:', cb.checked);
+    });
+    console.log('IDs que serão enviados:', valores);
+    
+    if (confirm(`Aprovar ${checked.length} senha(s) selecionada(s)?`)) {
+        const form = document.getElementById('aprovarLoteForm');
+        console.log('Form action:', form.action);
+        console.log('Form method:', form.method);
+        
+        // Verificar se os inputs estão realmente no formulário
+        const formInputs = form.querySelectorAll('input[name="senha_ids"]:checked');
+        console.log('Inputs no formulário:', formInputs.length);
+        
+        form.submit();
+    }
+}
+
+function aprovarUnica(senhaId) {
+    if (confirm('Aprovar esta senha?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/aprovar-senha/${senhaId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function reprovarUnica(senhaId) {
+    if (confirm('Tem certeza que deseja reprovar esta senha?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/reprovar-senha/${senhaId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

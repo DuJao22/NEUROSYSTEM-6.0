@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard da Equipe - {{ equipe_info.nome }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    .chart-container {
+        position: relative;
+        height: 400px;
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .filter-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .faturamento-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .receita-card {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .table-modern {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .table-modern th {
+        background: #f8f9fa;
+        border: none;
+        padding: 15px;
+        font-weight: 600;
+    }
+    .table-modern td {
+        border: none;
+        padding: 15px;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    .performance-bar {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .performance-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-users text-info"></i> Dashboard - {{ equipe_info.nome }}</h2>
+                <div class="filter-card d-inline-block">
+                    <form method="GET" class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <select name="mes" class="form-select form-select-sm">
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {% if i == mes %}selected{% endif %}>
+                                    {{ calendar.month_name[i] if calendar else i }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <select name="ano" class="form-select form-select-sm">
+                                {% for y in range(2023, 2027) %}
+                                <option value="{{ y }}" {% if y == ano %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas da Equipe -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="metric-card faturamento-card">
+                <div class="metric-value">R$ {{ "%.2f"|format(faturamento_bruto) }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-chart-line"></i> Faturamento Total da Equipe
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card receita-card">
+                <div class="metric-value">R$ {{ "%.2f"|format(valor_equipe) }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-coins"></i> Receita da Equipe ({{ equipe_info.porcentagem_participacao }}%)
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-value">{{ medicos_performance|length }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-user-md"></i> Médicos na Equipe
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Performance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="chart-container">
+                <h5><i class="fas fa-chart-bar text-primary"></i> Performance dos Médicos da Equipe</h5>
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Detalhada de Médicos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="table-modern">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th colspan="6">
+                                <h5 class="mb-0"><i class="fas fa-trophy text-warning"></i> Ranking dos Médicos da Equipe</h5>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>Posição</th>
+                            <th>Médico</th>
+                            <th>Pacientes</th>
+                            <th>Senhas</th>
+                            <th>Faturamento</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medico in medicos_performance %}
+                        {% set max_faturamento = medicos_performance[0].faturamento if medicos_performance else 1 %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-{{ 'warning' if loop.index <= 3 else 'secondary' }}">
+                                    {{ loop.index }}º
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ medico.medico_nome }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ medico.total_pacientes }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ medico.total_senhas }}</span>
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">R$ {{ "%.2f"|format(medico.faturamento) }}</span>
+                            </td>
+                            <td style="width: 200px;">
+                                <div class="performance-bar">
+                                    <div class="performance-fill" 
+                                         style="width: {{ (medico.faturamento / max_faturamento * 100) if max_faturamento > 0 else 0 }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ "%.1f"|format((medico.faturamento / max_faturamento * 100) if max_faturamento > 0 else 0) }}%
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo Financeiro -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="table-modern">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th colspan="2">
+                                <h5 class="mb-0"><i class="fas fa-calculator text-success"></i> Resumo Financeiro</h5>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Faturamento Bruto</strong></td>
+                            <td class="text-success">R$ {{ "%.2f"|format(faturamento_bruto) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Percentual da Equipe</strong></td>
+                            <td class="text-info">{{ equipe_info.porcentagem_participacao }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Receita da Equipe</strong></td>
+                            <td class="text-primary fw-bold">R$ {{ "%.2f"|format(valor_equipe) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Margem para Clínica</strong></td>
+                            <td class="text-muted">{{ 100 - equipe_info.porcentagem_participacao }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="table-modern">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th colspan="2">
+                                <h5 class="mb-0"><i class="fas fa-chart-pie text-info"></i> Estatísticas</h5>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Total de Médicos</strong></td>
+                            <td class="text-info">{{ medicos_performance|length }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total de Senhas</strong></td>
+                            <td class="text-success">{{ medicos_performance|sum(attribute='total_senhas') }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total de Pacientes</strong></td>
+                            <td class="text-warning">{{ medicos_performance|sum(attribute='total_pacientes') }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Média por Médico</strong></td>
+                            <td class="text-primary">
+                                R$ {{ "%.2f"|format((medicos_performance|sum(attribute='faturamento')) / (medicos_performance|length) if medicos_performance|length > 0 else 0) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gráfico de Performance dos Médicos
+const ctx = document.getElementById('performanceChart').getContext('2d');
+const medicosData = {{ medicos_performance|tojson }};
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: medicosData.map(m => m.medico_nome.split(' ')[0]),
+        datasets: [{
+            label: 'Faturamento (R$)',
+            data: medicosData.map(m => m.faturamento),
+            backgroundColor: 'rgba(17, 153, 142, 0.8)',
+            borderColor: 'rgba(17, 153, 142, 1)',
+            borderWidth: 2,
+            borderRadius: 5,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + value.toFixed(0);
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(context) {
+                        const medico = medicosData[context.dataIndex];
+                        return [
+                            'Pacientes: ' + medico.total_pacientes,
+                            'Senhas: ' + medico.total_senhas
+                        ];
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

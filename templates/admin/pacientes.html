@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Visualizar Pacientes{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1><i class="fas fa-users"></i> Todos os Pacientes</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Localização</th>
+                            <th>Médico</th>
+                            <th>Sessões</th>
+                            <th>Status</th>
+                            <th>Data Criação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paciente in pacientes %}
+                        <tr>
+                            <td data-label="Nome">{{ paciente.nome }}</td>
+                            <td data-label="CPF">{{ paciente.cpf }}</td>
+                            <td data-label="Localização">{{ paciente.localizacao }}</td>
+                            <td data-label="Médico">{{ paciente.medico_nome or 'Sem médico' }}</td>
+                            <td data-label="Sessões">
+                                <span class="badge bg-info">{{ paciente.sessoes_realizadas }}/{{ paciente.total_sessoes }}</span>
+                            </td>
+                            <td data-label="Status">
+                                <span class="badge bg-{{ 'success' if paciente.status == 'ativo' else 'secondary' }}">
+                                    {{ paciente.status.title() }}
+                                </span>
+                            </td>
+                            <td data-label="Data Criação">{{ paciente.data_criacao[:10] if paciente.data_criacao else '' }}</td>
+                            <td>
+                                <a href="{{ url_for('admin.paciente_sessoes', paciente_id=paciente.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Sessões">
+                                    <i class="fas fa-calendar-check"></i> Ver Sessões
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

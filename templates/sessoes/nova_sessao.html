@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Sessão - {{ patient.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle"></i> Nova Sessão - {{ patient.nome }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Patient Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user"></i> Paciente</h6>
+                            <p class="text-muted">{{ patient.nome }}<br>
+                            <small>CPF: {{ patient.cpf }}</small></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar-check"></i> Sessões</h6>
+                            <p class="text-muted">{{ sessoes_count }}/8 sessões registradas</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('sessoes.criar_sessao') }}">
+                        <input type="hidden" name="paciente_id" value="{{ patient.id }}">
+                        
+                        <!-- Session Details -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12">
+                                <label for="data_sessao" class="form-label">Data da Sessão *</label>
+                                <input type="date" class="form-control" id="data_sessao" name="data_sessao" 
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Observations -->
+                        <div class="mb-4">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3" 
+                                      placeholder="Observações sobre a sessão (opcional)"></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Nota:</strong> Para registrar tipos de atendimento (teste neuropsicológico ou consulta), vá para as informações do paciente após criar a sessão.
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Criar Sessão
+                            </button>
+                            <a href="{{ url_for('medico.pacientes') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date as default
+    const dateInput = document.getElementById('data_sessao');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+});
+</script>
+{% endblock %}

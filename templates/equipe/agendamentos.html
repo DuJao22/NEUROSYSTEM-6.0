@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Agendamentos da Equipe{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-users-clock me-2"></i>
+                        Agendamentos da Equipe
+                    </h3>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Statistics Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-2">
+                            <div class="card text-center bg-primary text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.total }}</h4>
+                                    <small>Total</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-info text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.futuros }}</h4>
+                                    <small>Futuros</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.pendentes }}</h4>
+                                    <small>Pendentes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-success text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.confirmados }}</h4>
+                                    <small>Confirmados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-danger text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.cancelados }}</h4>
+                                    <small>Cancelados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-secondary text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.medicos }}</h4>
+                                    <small>Médicos</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appointments by Doctor -->
+                    {% if agendamentos_por_medico %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-user-md me-2"></i>Agendamentos por Médico</h5>
+                        
+                        {% for medico, agendamentos in agendamentos_por_medico.items() %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-stethoscope me-2"></i>
+                                    Dr(a). {{ medico }}
+                                    <span class="badge bg-primary ms-2">{{ agendamentos|length }} agendamentos</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Paciente</th>
+                                                <th>Data/Hora</th>
+                                                <th>Status</th>
+                                                <th>Telefone</th>
+                                                <th>Observações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for agendamento in agendamentos %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ agendamento.paciente_nome }}</strong><br>
+                                                    <small class="text-muted">{{ agendamento.paciente_cpf }}</small>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ agendamento.data_formatada }}</strong><br>
+                                                    <small>{{ agendamento.hora_formatada }} ({{ agendamento.periodo }})</small>
+                                                </td>
+                                                <td>
+                                                    {% if agendamento.confirmado is none %}
+                                                        <span class="badge bg-warning">Pendente</span>
+                                                    {% elif agendamento.confirmado == 1 %}
+                                                        <span class="badge bg-success">Confirmado</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Cancelado</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ agendamento.paciente_telefone or '-' }}</td>
+                                                <td>{{ agendamento.observacoes or '-' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if not agendamentos_por_medico %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum agendamento encontrado</h5>
+                        <p class="text-muted">Quando houver agendamentos para os médicos da equipe, eles aparecerão aqui.</p>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

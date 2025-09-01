@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Perfil Completo{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/powerbi-charts.css') }}" rel="stylesheet">
+<style>
+    .patient-profile-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin: 0 auto 20px;
+    }
+    
+    .data-card {
+        background: var(--bs-card-bg);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .data-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .data-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid var(--bs-primary);
+    }
+    
+    .data-header h5 {
+        margin: 0;
+        margin-left: 10px;
+        font-weight: 600;
+    }
+    
+    .status-badge {
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .status-ativo {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    
+    .status-finalizado {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .download-btn {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border: none;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+    }
+    
+    .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
+        color: white;
+    }
+    
+    .access-history {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-top: 15px;
+    }
+    
+    .timeline-item {
+        border-left: 3px solid var(--bs-primary);
+        padding-left: 20px;
+        margin-bottom: 25px;
+        position: relative;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--bs-primary);
+    }
+    
+    .session-progress {
+        background: var(--bs-light);
+        border-radius: 10px;
+        padding: 15px;
+        margin: 15px 0;
+    }
+    
+    .progress-custom {
+        height: 10px;
+        border-radius: 5px;
+        background: var(--bs-light);
+        overflow: hidden;
+    }
+    
+    .progress-bar-custom {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 5px;
+        transition: width 0.5s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Patient Profile Header -->
+    <div class="patient-profile-card">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h3>{{ paciente.nome }}</h3>
+                <p class="mb-0">Paciente desde {{ paciente.data_criacao[:10] if paciente.data_criacao else 'N/A' }}</p>
+            </div>
+            <div class="col-md-9">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Status</h6>
+                        <span class="status-badge status-{{ paciente.status }}">
+                            <i class="fas fa-circle me-2"></i>{{ paciente.status.title() }}
+                        </span>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Médico Responsável</h6>
+                        <p class="mb-0"><i class="fas fa-user-md me-2"></i>{{ paciente.medico_nome or 'Não atribuído' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Acesso Permanente</h6>
+                        <p class="mb-0">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Dados sempre disponíveis
+                        </p>
+                    </div>
+                </div>
+                {% if paciente.ultimo_acesso %}
+                <div class="access-history">
+                    <i class="fas fa-clock me-1"></i> Último acesso: {{ paciente.ultimo_acesso[:16] if paciente.ultimo_acesso else 'Primeiro acesso' }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Personal Information -->
+        <div class="col-md-4">
+            <div class="data-card">
+                <div class="data-header">
+                    <i class="fas fa-id-card text-primary fa-lg"></i>
+                    <h5>Informações Pessoais</h5>
+                </div>
+                <div class="mb-3">
+                    <strong>CPF:</strong><br>
+                    <span class="text-muted">{{ paciente.cpf }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Carteirinha:</strong><br>
+                    <span class="text-muted">{{ paciente.carteirinha or 'Não informado' }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>WhatsApp:</strong><br>
+                    <span class="text-muted">{{ paciente.whatsapp or 'Não informado' }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Localização:</strong><br>
+                    <span class="text-muted">{{ paciente.localizacao or 'Não informado' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sessions Progress -->
+        <div class="col-md-4">
+            <div class="data-card">
+                <div class="data-header">
+                    <i class="fas fa-chart-line text-success fa-lg"></i>
+                    <h5>Progresso das Sessões</h5>
+                </div>
+                {% if sessoes %}
+                    <div class="session-progress">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Sessões Realizadas</span>
+                            <span><strong>{{ sessoes|length }}/8</strong></span>
+                        </div>
+                        <div class="progress-custom">
+                            <div class="progress-bar-custom" style="width: {{ (sessoes|length / 8 * 100) if sessoes|length <= 8 else 100 }}%"></div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            {% if sessoes|length >= 8 %}
+                                <i class="fas fa-check-circle text-success"></i> Tratamento completo
+                            {% else %}
+                                {{ 8 - sessoes|length }} sessões restantes
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <!-- Sessions Timeline -->
+                    <div class="mt-4">
+                        <h6>Histórico de Sessões</h6>
+                        {% for sessao in sessoes[:5] %}
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>Sessão {{ sessao.numero_sessao }}</strong>
+                                    <br><small class="text-muted">{{ sessao.data_sessao[:10] if sessao.data_sessao else 'Data não informada' }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'success' if sessao.realizada else 'secondary' }}">
+                                    {{ 'Realizada' if sessao.realizada else 'Pendente' }}
+                                </span>
+                            </div>
+                            {% if sessao.observacoes %}
+                            <p class="text-muted small mt-2">{{ sessao.observacoes }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if sessoes|length > 5 %}
+                        <small class="text-muted">E mais {{ sessoes|length - 5 }} sessões...</small>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-calendar-plus fa-3x mb-3"></i>
+                        <p>Nenhuma sessão agendada ainda</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Documents & Reports -->
+        <div class="col-md-4">
+            <div class="data-card">
+                <div class="data-header">
+                    <i class="fas fa-file-medical text-info fa-lg"></i>
+                    <h5>Meus Documentos</h5>
+                </div>
+                
+                <!-- Senhas/Passwords -->
+                {% if senhas %}
+                <div class="mb-4">
+                    <h6><i class="fas fa-key me-2"></i>Senhas de Tratamento</h6>
+                    {% for senha in senhas %}
+                    <div class="border rounded p-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ 'Teste Neuropsicológico' if senha.tipo == 'teste_neuropsicologico' else 'Consulta/Sessão' }}</strong>
+                                <br><small class="text-muted">R$ {{ "%.2f"|format(senha.valor) }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if senha.aprovada_admin else 'warning' }}">
+                                {{ 'Aprovada' if senha.aprovada_admin else 'Pendente' }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Reports/Laudos -->
+                {% if laudos %}
+                <div class="mb-4">
+                    <h6><i class="fas fa-download me-2"></i>Laudos Disponíveis</h6>
+                    {% for laudo in laudos %}
+                    <div class="border rounded p-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ laudo.nome_arquivo }}</strong>
+                                <br><small class="text-muted">{{ laudo.data_upload[:10] if laudo.data_upload else 'Data não informada' }}</small>
+                            </div>
+                            <a href="{{ url_for('paciente.download_laudo', laudo_id=laudo.id) }}" 
+                               class="btn download-btn btn-sm">
+                                <i class="fas fa-download me-1"></i>Download
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted mb-4">
+                    <i class="fas fa-file-pdf fa-3x mb-3"></i>
+                    <p>Nenhum laudo disponível ainda</p>
+                    <small>Seus laudos aparecerão aqui quando estiverem prontos</small>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('paciente.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>Voltar ao Dashboard
+                    </a>
+                    {% if confirmacoes_pendentes %}
+                    <a href="{{ url_for('paciente.dashboard') }}#confirmacoes" class="btn btn-warning">
+                        <i class="fas fa-calendar-check me-2"></i>{{ confirmacoes_pendentes|length }} Consulta(s) para Confirmar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Information -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle me-2"></i>Sobre seu Acesso Permanente</h6>
+                <p class="mb-0">
+                    Seus dados ficam sempre disponíveis neste sistema, mesmo após o término do tratamento. 
+                    Você pode acessar suas informações, baixar laudos e consultar seu histórico a qualquer momento 
+                    usando seu CPF como login e senha.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

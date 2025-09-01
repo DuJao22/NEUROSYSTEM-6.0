@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Sessões do Paciente - {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-user-md"></i> {{ paciente.nome }}</h1>
+        <a href="{{ url_for('admin.pacientes') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar aos Pacientes
+        </a>
+    </div>
+
+    <!-- Patient Info -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user"></i> Informações do Paciente</h5>
+                    <p><strong>CPF:</strong> {{ paciente.cpf }}</p>
+                    <p><strong>Telefone:</strong> {{ paciente.telefone or 'Não informado' }}</p>
+                    <p><strong>Email:</strong> {{ paciente.email or 'Não informado' }}</p>
+                    <p><strong>Localização:</strong> {{ paciente.localizacao }}</p>
+                    <p><strong>Médico Responsável:</strong> {{ paciente.medico_nome or 'Sem médico' }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-{{ 'success' if paciente.status == 'ativo' else 'secondary' }}">
+                            {{ paciente.status.title() }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line"></i> Estatísticas</h5>
+                    <p><strong>Total de Sessões:</strong> {{ paciente.total_sessoes }}</p>
+                    <p><strong>Sessões Realizadas:</strong> {{ paciente.sessoes_realizadas }}</p>
+                    <p><strong>Progresso:</strong> 
+                        {% if paciente.total_sessoes > 0 %}
+                            {{ "%.1f"|format((paciente.sessoes_realizadas / paciente.total_sessoes) * 100) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-calendar-check"></i> Sessões</h5>
+            
+            {% if sessoes %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sessão</th>
+                                <th>Data Agendada</th>
+                                <th>Data Realizada</th>
+                                <th>Status</th>
+                                <th>Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sessao in sessoes %}
+                            <tr>
+                                <td>{{ sessao.numero_sessao }}</td>
+                                <td>{{ sessao.data_agendada[:10] if sessao.data_agendada else 'Não agendada' }}</td>
+                                <td>{{ sessao.data_sessao[:10] if sessao.data_sessao else '-' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if sessao.realizada else 'warning' }}">
+                                        {{ 'Realizada' if sessao.realizada else 'Pendente' }}
+                                    </span>
+                                </td>
+                                <td>{{ sessao.observacoes or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Nenhuma sessão agendada para este paciente.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Senhas/Passwords -->
+    {% if senhas_paciente %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-key"></i> Senhas/Autorizações</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Código</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for senha in senhas_paciente %}
+                        <tr>
+                            <td>
+                                {% if senha.tipo == 'teste_neuropsicologico' %}
+                                    <span class="badge bg-primary">Teste Neuropsicológico</span>
+                                {% elif senha.tipo == 'consulta_sessao' %}
+                                    <span class="badge bg-info">Consulta/Sessão</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ senha.tipo.title() }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ senha.codigo }}</td>
+                            <td>R$ {{ "%.2f"|format(senha.valor) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if senha.aprovada_admin else 'warning' }}">
+                                    {{ 'Aprovada' if senha.aprovada_admin else 'Pendente' }}
+                                </span>
+                            </td>
+                            <td>{{ senha.data_criacao[:10] if senha.data_criacao else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Laudos -->
+    {% if laudos %}
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-file-medical"></i> Laudos</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Arquivo</th>
+                            <th>Data Upload</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for laudo in laudos %}
+                        <tr>
+                            <td>{{ laudo.nome_arquivo }}</td>
+                            <td>{{ laudo.data_upload[:10] if laudo.data_upload else '-' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if laudo.liberado else 'warning' }}">
+                                    {{ 'Liberado' if laudo.liberado else 'Pendente' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.download_laudo', laudo_id=laudo.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

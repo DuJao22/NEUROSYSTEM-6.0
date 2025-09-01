@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Financeiro - {{ data_relatorio }}</title>
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
+        
+        .relatorio-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            min-height: 297mm;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .header .data-periodo {
+            color: #34495e;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .resumo-financeiro {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .resumo-financeiro h2 {
+            color: #2c3e50;
+            font-size: 20px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .resumo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .resumo-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .resumo-item .label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .resumo-item .valor {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .resumo-item.bruto .valor {
+            color: #17a2b8;
+        }
+        
+        .resumo-item.liquido .valor {
+            color: #28a745;
+        }
+        
+        .resumo-item.custos .valor {
+            color: #dc3545;
+        }
+        
+        .secao {
+            margin-bottom: 35px;
+        }
+        
+        .secao h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tabela-relatorio {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .tabela-relatorio th,
+        .tabela-relatorio td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tabela-relatorio th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .tabela-relatorio td {
+            font-size: 13px;
+        }
+        
+        .tabela-relatorio .valor-monetario {
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .tabela-relatorio .positivo {
+            color: #28a745;
+        }
+        
+        .tabela-relatorio .negativo {
+            color: #dc3545;
+        }
+        
+        .tabela-relatorio .neutro {
+            color: #6c757d;
+        }
+        
+        .tabela-relatorio tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .total-secao {
+            background: #e9ecef;
+            font-weight: bold;
+        }
+        
+        .total-secao td {
+            border-top: 2px solid #adb5bd;
+            font-size: 14px;
+        }
+        
+        .rodape {
+            position: fixed;
+            bottom: 1cm;
+            left: 1cm;
+            right: 1cm;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
+        }
+        
+        .btn-imprimir {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .btn-imprimir:hover {
+            background: #0056b3;
+        }
+        
+        .observacoes {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .observacoes h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .observacoes ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-ativo {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inativo {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="relatorio-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>RELATÓRIO FINANCEIRO</h1>
+            <div class="subtitle">Sistema de Gestão Neuropsicológica</div>
+            <div class="data-periodo">Período: {{ data_relatorio }}</div>
+        </div>
+
+        <!-- Resumo Financeiro -->
+        <div class="resumo-financeiro">
+            <h2>Resumo Executivo</h2>
+            <div class="resumo-grid">
+                <div class="resumo-item bruto">
+                    <div class="label">Faturamento Bruto</div>
+                    <div class="valor">R$ {{ "%.2f"|format(faturamento_bruto) }}</div>
+                </div>
+                <div class="resumo-item custos">
+                    <div class="label">Total de Custos</div>
+                    <div class="valor">R$ {{ "%.2f"|format(total_pagamento_equipes + total_pagamento_externos) }}</div>
+                </div>
+                <div class="resumo-item liquido">
+                    <div class="label">Valor para Admin</div>
+                    <div class="valor">R$ {{ "%.2f"|format(lucro_liquido) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faturamento por Médicos Externos -->
+        <div class="secao">
+            <h3>💼 Médicos Externos - Detalhamento Individual</h3>
+            <table class="tabela-relatorio">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Nome do Médico</th>
+                        <th style="width: 10%;">Sessões</th>
+                        <th style="width: 10%;">Laudos</th>
+                        <th style="width: 15%;">Faturamento</th>
+                        <th style="width: 20%;">Pagamento</th>
+                        <th style="width: 10%;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medico in faturamento_por_medico %}
+                        {% if medico.equipe_nome == 'Externo' %}
+                        <tr>
+                            <td>{{ medico.medico_nome }}</td>
+                            <td>{{ medico.sessoes_count or 0 }}</td>
+                            <td>{{ medico.laudos_fechados or 0 }}</td>
+                            <td class="valor-monetario {% if medico.faturamento > 0 %}positivo{% else %}neutro{% endif %}">
+                                R$ {{ "%.2f"|format(medico.faturamento or 0) }}
+                            </td>
+                            <td class="valor-monetario {% if medico.pagamento_medico > 0 %}negativo{% else %}neutro{% endif %}">
+                                R$ {{ "%.2f"|format(medico.pagamento_medico or 0) }}
+                                {% if medico.laudos_fechados > 0 %}
+                                    <small class="text-muted d-block">(R$ 128 total pelo laudo)</small>
+                                {% else %}
+                                    <small class="text-muted d-block">(R$ 16 por sessão)</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge {% if medico.faturamento > 0 %}status-ativo{% else %}status-inativo{% endif %}">
+                                    {% if medico.faturamento > 0 %}Ativo{% else %}Inativo{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    <tr class="total-secao">
+                        <td colspan="3"><strong>Total Médicos Externos</strong></td>
+                        <td class="valor-monetario"><strong>R$ {{ "%.2f"|format(faturamento_externos) }}</strong></td>
+                        <td class="valor-monetario"><strong>R$ {{ "%.2f"|format(total_pagamento_externos) }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Faturamento por Equipes -->
+        <div class="secao">
+            <h3>🏥 Equipes Médicas - Análise por Grupo</h3>
+            <table class="tabela-relatorio">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Nome da Equipe</th>
+                        <th style="width: 15%;">Médicos</th>
+                        <th style="width: 20%;">Faturamento</th>
+                        <th style="width: 15%;">Pagamento</th>
+                        <th style="width: 10%;">% Equipe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipe in faturamento_por_equipe %}
+                        {% if equipe.equipe_nome != 'Externo' and equipe.equipe_nome %}
+                        <tr>
+                            <td>{{ equipe.equipe_nome }}</td>
+                            <td>{{ equipe.medicos_count or 0 }}</td>
+                            <td class="valor-monetario {% if equipe.total_faturamento > 0 %}positivo{% else %}neutro{% endif %}">
+                                R$ {{ "%.2f"|format(equipe.total_faturamento or 0) }}
+                            </td>
+                            <td class="valor-monetario {% if equipe.pagamento_equipe > 0 %}negativo{% else %}neutro{% endif %}">
+                                R$ {{ "%.2f"|format(equipe.pagamento_equipe or 0) }}
+                            </td>
+                            <td class="valor-monetario">
+                                {{ "%.1f"|format((equipe.pagamento_equipe / equipe.total_faturamento * 100) if equipe.total_faturamento > 0 else 0) }}%
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    <tr class="total-secao">
+                        <td colspan="2"><strong>Total Equipes</strong></td>
+                        <td class="valor-monetario"><strong>R$ {{ "%.2f"|format(faturamento_equipes) }}</strong></td>
+                        <td class="valor-monetario"><strong>R$ {{ "%.2f"|format(total_pagamento_equipes) }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Detalhamento por Médicos das Equipes -->
+        <div class="secao">
+            <h3>👨‍⚕️ Médicos por Equipe - Detalhamento Individual</h3>
+            {% for equipe_nome in equipes_nomes %}
+                {% if equipe_nome != 'Externo' %}
+                <h4 style="color: #495057; margin: 20px 0 10px 0;">Equipe: {{ equipe_nome }}</h4>
+                <table class="tabela-relatorio" style="margin-bottom: 25px;">
+                    <thead>
+                        <tr>
+                            <th>Nome do Médico</th>
+                            <th>Sessões</th>
+                            <th>Faturamento Individual</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medico in faturamento_por_medico %}
+                            {% if medico.equipe_nome == equipe_nome %}
+                            <tr>
+                                <td>{{ medico.medico_nome }}</td>
+                                <td>{{ medico.sessoes_count or 0 }}</td>
+                                <td class="valor-monetario {% if medico.faturamento > 0 %}positivo{% else %}neutro{% endif %}">
+                                    R$ {{ "%.2f"|format(medico.faturamento or 0) }}
+                                </td>
+                                <td>
+                                    <span class="status-badge {% if medico.faturamento > 0 %}status-ativo{% else %}status-inativo{% endif %}">
+                                        {% if medico.faturamento > 0 %}Ativo{% else %}Inativo{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Observações -->
+        <div class="observacoes">
+            <h4>📋 Observações Importantes</h4>
+            <ul>
+                <li><strong>Médicos Externos:</strong> Se finalizaram laudo recebem R$ 128 total, senão recebem R$ 16 por sessão realizada</li>
+                <li><strong>Equipes Médicas:</strong> Recebem porcentagem do faturamento da equipe, pagamentos internos gerenciados pela própria equipe</li>
+                <li><strong>Faturamento:</strong> Baseado nos valores das senhas de convênio aprovadas pelo sistema</li>
+                <li><strong>Valor para Admin:</strong> Faturamento total menos os pagamentos para médicos e equipes</li>
+                <li><strong>Status Ativo:</strong> Médicos com faturamento superior a R$ 0,00 no período</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Botão Imprimir -->
+    <button class="btn-imprimir no-print" onclick="window.print()">
+        🖨️ Imprimir Relatório
+    </button>
+
+    <!-- Rodapé -->
+    <div class="rodape no-print">
+        Relatório gerado em {{ data_geracao }} - Sistema de Gestão Neuropsicológica
+    </div>
+
+    <script>
+        // Auto-focus para impressão quando a página carrega
+        window.addEventListener('load', function() {
+            // Pequeno delay para garantir que a página carregou completamente
+            setTimeout(function() {
+                document.querySelector('.btn-imprimir').focus();
+            }, 500);
+        });
+        
+        // Atalho de teclado para imprimir (Ctrl+P)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+    </script>
+</body>
+</html>

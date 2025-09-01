@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Perfil - Sistema Neuropsicológico{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-circle"></i> Meu Perfil
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- User Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user"></i> Nome</h6>
+                            <p class="text-muted">{{ user_info.nome or 'Não informado' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-envelope"></i> Email/CPF</h6>
+                            <p class="text-muted">{{ user_info.email or user_info.cpf or 'Não informado' }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Theme Preference -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6><i class="fas fa-palette"></i> Preferências de Tema</h6>
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="tema" id="tema-dark" value="dark" {% if tema_atual == 'dark' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="tema-dark">
+                                    <i class="fas fa-moon"></i> Escuro
+                                </label>
+
+                                <input type="radio" class="btn-check" name="tema" id="tema-light" value="light" {% if tema_atual == 'light' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="tema-light">
+                                    <i class="fas fa-sun"></i> Claro
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Change Password -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6><i class="fas fa-key"></i> Alterar Senha</h6>
+                            <form method="POST" action="{{ url_for('preferencias.alterar_senha') }}">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="senha_atual" class="form-label">Senha Atual</label>
+                                        <input type="password" class="form-control" id="senha_atual" name="senha_atual" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="nova_senha" class="form-label">Nova Senha</label>
+                                        <input type="password" class="form-control" id="nova_senha" name="nova_senha" required minlength="6">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="confirmar_senha" class="form-label">Confirmar Senha</label>
+                                        <input type="password" class="form-control" id="confirmar_senha" name="confirmar_senha" required minlength="6">
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Alterar Senha
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Theme change handler
+    document.querySelectorAll('input[name="tema"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                alterarTema(this.value);
+            }
+        });
+    });
+});
+
+function alterarTema(tema) {
+    fetch('{{ url_for("preferencias.alterar_tema") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tema: tema })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Apply theme immediately
+            document.documentElement.setAttribute('data-bs-theme', tema);
+            showToast('Tema alterado com sucesso!', 'success');
+        } else {
+            showToast('Erro ao alterar tema', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Erro ao alterar tema', 'error');
+    });
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

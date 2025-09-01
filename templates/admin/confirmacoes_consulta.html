@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmações de Consulta{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-calendar-check"></i> Confirmações de Consulta</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ stats.total_agendamentos }}</h5>
+                    <p class="card-text small">Total</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ stats.pendentes }}</h5>
+                    <p class="card-text small">Pendentes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ stats.confirmadas }}</h5>
+                    <p class="card-text small">Confirmadas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">{{ stats.canceladas }}</h5>
+                    <p class="card-text small">Canceladas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info">{{ stats.taxa_confirmacao }}%</h5>
+                    <p class="card-text small">Taxa de Confirmação</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="confirmacoesTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pendentes-tab" data-bs-toggle="tab" data-bs-target="#pendentes" type="button" role="tab">
+                <i class="fas fa-clock"></i> Pendentes ({{ stats.pendentes }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="confirmadas-tab" data-bs-toggle="tab" data-bs-target="#confirmadas" type="button" role="tab">
+                <i class="fas fa-check"></i> Confirmadas ({{ stats.confirmadas }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="canceladas-tab" data-bs-toggle="tab" data-bs-target="#canceladas" type="button" role="tab">
+                <i class="fas fa-times"></i> Canceladas ({{ stats.canceladas }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="todas-tab" data-bs-toggle="tab" data-bs-target="#todas" type="button" role="tab">
+                <i class="fas fa-list"></i> Todas ({{ stats.total_agendamentos }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="confirmacaoTabsContent">
+        <!-- Pendentes -->
+        <div class="tab-pane fade show active" id="pendentes" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    {% if pendentes %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Médico</th>
+                                        <th>Equipe</th>
+                                        <th>Data Consulta</th>
+                                        <th>Observações</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for conf in pendentes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ conf.paciente_nome }}</strong><br>
+                                            <small class="text-muted">{{ conf.cpf }}</small>
+                                        </td>
+                                        <td>{{ conf.medico_nome }}</td>
+                                        <td>
+                                            {% if conf.equipe_nome %}
+                                                {{ conf.equipe_nome }}
+                                            {% else %}
+                                                <span class="text-muted">Médico Externo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ conf.data_agendamento[:16] if conf.data_agendamento else '-' }}</td>
+                                        <td>{{ conf.observacoes or '-' }}</td>
+                                        <td><span class="badge bg-warning">Aguardando Confirmação</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhuma confirmação pendente</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmadas -->
+        <div class="tab-pane fade" id="confirmadas" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    {% if confirmadas %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Médico</th>
+                                        <th>Equipe</th>
+                                        <th>Data Consulta</th>
+                                        <th>Confirmado em</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for conf in confirmadas %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ conf.paciente_nome }}</strong><br>
+                                            <small class="text-muted">{{ conf.cpf }}</small>
+                                        </td>
+                                        <td>{{ conf.medico_nome }}</td>
+                                        <td>
+                                            {% if conf.equipe_nome %}
+                                                {{ conf.equipe_nome }}
+                                            {% else %}
+                                                <span class="text-muted">Médico Externo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ conf.data_agendamento[:16] if conf.data_agendamento else '-' }}</td>
+                                        <td>{{ conf.data_confirmacao[:16] if conf.data_confirmacao else '-' }}</td>
+                                        <td><span class="badge bg-success">Confirmada</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhuma consulta confirmada</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Canceladas -->
+        <div class="tab-pane fade" id="canceladas" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    {% if canceladas %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Médico</th>
+                                        <th>Equipe</th>
+                                        <th>Data Consulta</th>
+                                        <th>Cancelado em</th>
+                                        <th>Motivo</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for conf in canceladas %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ conf.paciente_nome }}</strong><br>
+                                            <small class="text-muted">{{ conf.cpf }}</small>
+                                        </td>
+                                        <td>{{ conf.medico_nome }}</td>
+                                        <td>
+                                            {% if conf.equipe_nome %}
+                                                {{ conf.equipe_nome }}
+                                            {% else %}
+                                                <span class="text-muted">Médico Externo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ conf.data_agendamento[:16] if conf.data_agendamento else '-' }}</td>
+                                        <td>{{ conf.data_confirmacao[:16] if conf.data_confirmacao else '-' }}</td>
+                                        <td>{{ conf.observacoes_paciente or '-' }}</td>
+                                        <td><span class="badge bg-danger">Cancelada</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhuma consulta cancelada</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Todas -->
+        <div class="tab-pane fade" id="todas" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    {% if confirmacoes %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Paciente</th>
+                                        <th>Médico</th>
+                                        <th>Equipe</th>
+                                        <th>Data Consulta</th>
+                                        <th>Status</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for conf in confirmacoes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ conf.paciente_nome }}</strong><br>
+                                            <small class="text-muted">{{ conf.cpf }}</small>
+                                        </td>
+                                        <td>{{ conf.medico_nome }}</td>
+                                        <td>
+                                            {% if conf.equipe_nome %}
+                                                {{ conf.equipe_nome }}
+                                            {% else %}
+                                                <span class="text-muted">Médico Externo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ conf.data_agendamento[:16] if conf.data_agendamento else '-' }}</td>
+                                        <td>
+                                            {% if conf.confirmado is none %}
+                                                <span class="badge bg-warning">Pendente</span>
+                                            {% elif conf.confirmado == 1 %}
+                                                <span class="badge bg-success">Confirmada</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Cancelada</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if conf.confirmado is not none %}
+                                                <small class="text-muted">
+                                                    {{ conf.data_confirmacao[:16] if conf.data_confirmacao else '-' }}
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted">-</small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhuma consulta agendada</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

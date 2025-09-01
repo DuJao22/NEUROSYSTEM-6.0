@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Pagamentos Médicos Externos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transition: transform 0.3s ease;
+    }
+    
+    .payment-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .doctor-card {
+        background: var(--bs-dark);
+        border-radius: 10px;
+        border: 1px solid var(--bs-border-color);
+        transition: all 0.3s ease;
+    }
+    
+    .doctor-card:hover {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 15px rgba(13, 110, 253, 0.3);
+    }
+    
+    .guarantee-badge {
+        background: linear-gradient(45deg, #ff6b6b, #ffa500);
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .session-detail {
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 10px;
+        margin: 5px 0;
+    }
+    
+    .month-selector {
+        background: var(--bs-dark);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-money-bill-wave text-success"></i> Pagamentos Médicos Externos</h1>
+        <a href="{{ url_for('relatorios.admin_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+        </a>
+    </div>
+
+    <!-- Month Selector -->
+    <div class="month-selector">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-3">
+                <label for="mes" class="form-label">Mês</label>
+                <select name="mes" id="mes" class="form-select">
+                    {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if i == mes %}selected{% endif %}>
+                        {{ calendar.month_name[i] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="ano" class="form-label">Ano</label>
+                <select name="ano" id="ano" class="form-select">
+                    {% for y in range(2024, 2027) %}
+                    <option value="{{ y }}" {% if y == ano %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Consultar
+                </button>
+            </div>
+            <div class="col-md-3 text-end">
+                <button type="button" class="btn btn-success" onclick="calcularTodos()">
+                    <i class="fas fa-calculator"></i> Recalcular Todos
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="payment-card">
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h3>{{ pagamentos.total_medicos }}</h3>
+                            <p class="mb-0">Médicos Externos</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3>R$ {{ "%.2f"|format(pagamentos.total_geral) }}</h3>
+                            <p class="mb-0">Total a Pagar</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3>{{ pagamentos.mes_referencia }}</h3>
+                            <p class="mb-0">Mês de Referência</p>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-light btn-lg" onclick="marcarTodosPagos()">
+                                <i class="fas fa-check-circle"></i> Marcar Todos como Pagos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctors List -->
+    <div class="row">
+        {% for medico in pagamentos.pagamentos_individuais %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="doctor-card card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-md text-primary"></i>
+                        {{ medico.medico_nome }}
+                    </h6>
+                    {% if medico.is_externo %}
+                        <span class="badge bg-warning">Externo</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <!-- Payment Summary -->
+                    <div class="text-center mb-3">
+                        <h4 class="text-success">R$ {{ "%.2f"|format(medico.pagamento_total) }}</h4>
+                        <small class="text-muted">
+                            R$ {{ "%.2f"|format(medico.valor_sessao) }} por sessão
+                        </small>
+                    </div>
+
+                    <!-- Patients Details -->
+                    <h6>Pacientes ({{ medico.total_pacientes }})</h6>
+                    {% for paciente in medico.detalhes_pacientes %}
+                    <div class="session-detail">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ paciente.paciente_nome }}</strong>
+                                <br>
+                                <small>
+                                    Realizadas: {{ paciente.sessoes_realizadas }} |
+                                    Pagas: {{ paciente.sessoes_pagas }}
+                                </small>
+                                {% if paciente.laudo_garantia %}
+                                <br>
+                                <span class="guarantee-badge">
+                                    <i class="fas fa-star"></i> Garantia 8 Sessões
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <strong class="text-success">
+                                    R$ {{ "%.2f"|format(paciente.valor_paciente) }}
+                                </strong>
+                                <br>
+                                <small class="text-muted">{{ paciente.mes_inicio }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('relatorios.pagamentos_medicos', medico_id=medico.medico_id, mes=mes, ano=ano) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye"></i> Ver Detalhes
+                        </a>
+                        <button class="btn btn-success btn-sm" 
+                                onclick="marcarPago({{ medico.medico_id }}, '{{ pagamentos.mes_referencia }}')">
+                            <i class="fas fa-check"></i> Marcar como Pago
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not pagamentos.pagamentos_individuais %}
+    <div class="text-center mt-5">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h4>Nenhum médico externo encontrado</h4>
+        <p class="text-muted">Não há médicos externos com pacientes no período selecionado.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function marcarPago(medicoId, mesReferencia) {
+    if (!confirm('Confirma que o pagamento foi efetuado?')) return;
+    
+    const formData = new FormData();
+    formData.append('medico_id', medicoId);
+    formData.append('mes_referencia', mesReferencia);
+    
+    fetch('{{ url_for("relatorios.marcar_pagamento_efetuado") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Pagamento marcado como efetuado!');
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao processar solicitação');
+    });
+}
+
+function calcularTodos() {
+    if (!confirm('Recalcular todos os pagamentos? Isso pode demorar alguns segundos.')) return;
+    
+    // Recarregar página para forçar recálculo
+    const url = new URL(window.location);
+    url.searchParams.set('recalcular', '1');
+    window.location.href = url.toString();
+}
+
+function marcarTodosPagos() {
+    if (!confirm('Marcar TODOS os médicos como pagos para este mês?')) return;
+    
+    {% for medico in pagamentos.pagamentos_individuais %}
+    setTimeout(() => {
+        const formData = new FormData();
+        formData.append('medico_id', {{ medico.medico_id }});
+        formData.append('mes_referencia', '{{ pagamentos.mes_referencia }}');
+        
+        fetch('{{ url_for("relatorios.marcar_pagamento_efetuado") }}', {
+            method: 'POST',
+            body: formData
+        });
+    }, {{ loop.index0 * 200 }});
+    {% endfor %}
+    
+    setTimeout(() => {
+        alert('Todos os pagamentos foram marcados como efetuados!');
+        location.reload();
+    }, {{ pagamentos.pagamentos_individuais|length * 200 + 1000 }});
+}
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+# ===================================================
+# Sistema de Controle de Pacientes Neuropsicológicos
+# Dependências Python necessárias
+# ===================================================
+
+# Flask Web Framework - Core do sistema
+Flask==3.0.3
+Werkzeug==3.0.3
+
+# Banco de dados
+Flask-SQLAlchemy==3.1.1
+psycopg2-binary==2.9.9
+
+# Servidor WSGI para produção
+gunicorn==23.0.0
+
+# Validação de emails
+email-validator==2.1.1
+
+# ===================================================
+# Como usar este arquivo:
+# 
+# 1. Para instalar no Replit:
+#    Use a ferramenta de packages do Replit
+#    
+# 2. Para instalar localmente:
+#    pip install -r project_requirements.txt
+#
+# 3. Para instalar com uv (mais rápido):
+#    uv pip install -r project_requirements.txt
+# ===================================================
+
+# Dependências opcionais para desenvolvimento:
+# python-dotenv==1.0.0  # Para variáveis de ambiente
+# pytest==8.0.0         # Para testes
+# black==24.0.0          # Para formatação de código

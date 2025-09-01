@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Status dos Laudos - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">
+            <i class="fas fa-file-medical"></i> Status de Liberação dos Laudos
+        </h1>
+        <div>
+            <a href="{{ url_for('admin_senhas.senhas_pendentes') }}" class="btn btn-secondary">
+                <i class="fas fa-key"></i> Gerenciar Senhas
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>Requisitos para Entrega:</strong> Para liberar a entrega do laudo, o paciente deve ter ambas as senhas aprovadas:
+        <strong>Teste Neuropsicológico (R$ 800)</strong> e <strong>Consulta/Sessão (R$ 80)</strong>.
+    </div>
+
+    {% if pacientes_laudos %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Teste Neuropsicológico</th>
+                            <th>Consulta/Sessão</th>
+                            <th>Status do Laudo</th>
+                            <th>Data Liberação</th>
+                            <th width="150">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paciente in pacientes_laudos %}
+                        <tr>
+                            <td>
+                                <strong>{{ paciente.nome }}</strong><br>
+                                <small class="text-muted">{{ paciente.cpf }}</small>
+                            </td>
+                            <td>{{ paciente.medico_nome }}</td>
+                            <td>
+                                {% if paciente.teste_aprovado > 0 %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> R$ 800 Aprovado
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times"></i> Pendente
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if paciente.consulta_aprovada > 0 %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> R$ 80 Aprovado
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times"></i> Pendente
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if paciente.liberado_entrega %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-unlock"></i> Liberado para Entrega
+                                    </span>
+                                {% elif paciente.teste_aprovado > 0 and paciente.consulta_aprovada > 0 %}
+                                    <span class="badge bg-warning fs-6">
+                                        <i class="fas fa-lock"></i> Pronto para Liberar
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="fas fa-clock"></i> Aguardando Senhas
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if paciente.data_liberacao %}
+                                    {{ paciente.data_liberacao }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not paciente.liberado_entrega and paciente.teste_aprovado > 0 and paciente.consulta_aprovada > 0 %}
+                                    <form method="POST" action="{{ url_for('admin_senhas.liberar_laudo_manual', paciente_id=paciente.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-success btn-sm" title="Liberar Laudo">
+                                            <i class="fas fa-unlock"></i> Liberar
+                                        </button>
+                                    </form>
+                                {% elif paciente.liberado_entrega %}
+                                    <span class="text-success">
+                                        <i class="fas fa-check-circle"></i> Liberado
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-hourglass-half"></i> Aguardando
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ pacientes_laudos|length }}</h4>
+                    <p class="mb-0">Total de Laudos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ pacientes_laudos|selectattr('liberado_entrega')|list|length }}</h4>
+                    <p class="mb-0">Laudos Liberados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ (pacientes_laudos|selectattr('teste_aprovado')|selectattr('consulta_aprovada')|rejectattr('liberado_entrega')|list)|length }}</h4>
+                    <p class="mb-0">Prontos p/ Liberar</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ (pacientes_laudos|rejectattr('liberado_entrega')|list)|length - (pacientes_laudos|selectattr('teste_aprovado')|selectattr('consulta_aprovada')|rejectattr('liberado_entrega')|list)|length }}</h4>
+                    <p class="mb-0">Aguardando Senhas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-file-medical fa-4x text-muted mb-3"></i>
+        <h4>Nenhum laudo encontrado</h4>
+        <p class="text-muted">Não há laudos cadastrados no sistema no momento.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh every 30 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}

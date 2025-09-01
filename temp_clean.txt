@@ -1,0 +1,3 @@
+console.log('Advanced Dashboard with Chart.js initialized successfully');
+</script>
+{% endblock %}

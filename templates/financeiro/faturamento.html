@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Faturamento - Sistema Neuropsicológico{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-money-bill-wave"></i> Faturamento da Clínica
+                </h1>
+                <div>
+                    <button class="btn btn-primary" onclick="recalcularFaturamento()">
+                        <i class="fas fa-sync"></i> Recalcular
+                    </button>
+                </div>
+            </div>
+
+            <!-- Financial Overview Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">R$ {{ "%.2f"|format(relatorio.faturamento_clinica or 0) }}</h4>
+                                    <p class="card-text">Receita das Senhas</p>
+                                    <small>Convênios</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-hospital fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">R$ {{ "%.2f"|format(relatorio.total_pagamentos_equipe or 0) }}</h4>
+                                    <p class="card-text">Pagamento Equipes</p>
+                                    <small>Porcentagem</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">R$ {{ "%.2f"|format(relatorio.total_pagamentos_externos or 0) }}</h4>
+                                    <p class="card-text">Médicos Externos</p>
+                                    <small>8 sessões garantidas</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-user-md fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">R$ {{ "%.2f"|format(relatorio.resultado_liquido or 0) }}</h4>
+                                    <p class="card-text">Resultado Líquido</p>
+                                    <small>Clínica</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalhamento dos Pagamentos das Equipes -->
+            {% if relatorio.pagamentos_equipe %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users"></i> Pagamentos das Equipes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Equipe</th>
+                                    <th>Porcentagem</th>
+                                    <th>Valor a Receber</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pagamento in relatorio.pagamentos_equipe %}
+                                <tr>
+                                    <td>{{ pagamento.equipe }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ pagamento.porcentagem_participacao }}%</span>
+                                    </td>
+                                    <td>
+                                        R$ {{ "%.2f"|format(pagamento.valor) }}
+                                        <br><small class="text-muted">Base: R$ {{ "%.2f"|format(pagamento.faturamento_base) }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock"></i> Pendente
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Detalhamento dos Médicos Externos -->
+            {% if relatorio.pagamentos_externos %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-md"></i> Pagamentos Médicos Externos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Médico</th>
+                                    <th>Paciente</th>
+                                    <th>Sessões Realizadas</th>
+                                    <th>Sessões Pagas</th>
+                                    <th>Valor por Sessão</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pagamento in relatorio.pagamentos_externos %}
+                                <tr>
+                                    <td>{{ pagamento.medico }}</td>
+                                    <td>{{ pagamento.paciente }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ pagamento.sessoes_realizadas }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ pagamento.sessoes_pagas }}</span>
+                                    </td>
+                                    <td>R$ {{ "%.2f"|format(pagamento.valor_por_sessao) }}</td>
+                                    <td>R$ {{ "%.2f"|format(pagamento.valor_total) }}</td>
+                                    <td>
+                                        {% if pagamento.finalizado_antes %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-check-circle"></i> Finalizado Antecipado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-clock"></i> Em Andamento
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Valores a Pagar aos Médicos -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-money-check-alt"></i> Valores a Pagar aos Médicos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if relatorio.pagamentos_medicos %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Médico</th>
+                                    <th>Tipo</th>
+                                    <th>Pacientes</th>
+                                    <th>Sessões/Senhas</th>
+                                    <th>Valor Base</th>
+                                    <th class="text-end">Valor a Pagar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pagamento in relatorio.pagamentos_medicos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ pagamento.medico_nome }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if pagamento.equipe_nome %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-users"></i> {{ pagamento.equipe_nome }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-user-md"></i> Externo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ pagamento.total_pacientes }}</td>
+                                    <td>
+                                        {% if pagamento.equipe_nome %}
+                                            {{ pagamento.total_senhas }} senhas
+                                        {% else %}
+                                            {% if pagamento.pacientes_finalizados > 0 %}
+                                                <span class="text-success">{{ pagamento.pacientes_finalizados }} pacote(s) fechado(s)</span>
+                                                <br><small class="text-muted">8 sessões por pacote</small>
+                                            {% else %}
+                                                <span class="text-muted">Nenhum pacote fechado</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if pagamento.equipe_nome %}
+                                            {{ pagamento.porcentagem_participacao }}% do faturamento
+                                        {% else %}
+                                            <strong>R$ {{ "%.2f"|format(pagamento.valor_por_sessao * 8) }}</strong> por pacote
+                                            <br><small class="text-muted">8 sessões × R$ {{ "%.2f"|format(pagamento.valor_por_sessao) }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success fs-6">
+                                            R$ {{ "%.2f"|format(pagamento.valor_a_pagar) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-dark">
+                                    <th colspan="5">Total a Pagar aos Médicos</th>
+                                    <th class="text-end">
+                                        R$ {{ "%.2f"|format(relatorio.total_pagamentos_medicos) }}
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Nenhum pagamento calculado para este mês.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Explicação do Sistema -->
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Como Funciona o Faturamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-hospital text-primary"></i> Receita da Clínica</h6>
+                            <p class="text-muted">A clínica recebe do convênio mediante a senha que o paciente tira. Cada senha tem seu valor específico.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-users text-info"></i> Equipes</h6>
+                            <p class="text-muted">As equipes recebem uma porcentagem da receita total das senhas. A equipe paga seus próprios médicos internamente.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-user-md text-warning"></i> Médicos Externos</h6>
+                            <p class="text-muted">Médicos externos recebem APENAS quando fecham o pacote (8 sessões por paciente). Sessões avulsas ou após 2 meses não contam.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function recalcularFaturamento() {
+    if (confirm('Deseja recalcular o faturamento? Isso pode demorar alguns minutos.')) {
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações do Sistema{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1><i class="fas fa-cog"></i> Configurações do Sistema</h1>
+    
+    <form method="POST">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Valores Padrão</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="valor_teste_neuropsicologico" class="form-label">Valor Teste Neuropsicológico (R$)</label>
+                            <input type="number" class="form-control" name="valor_teste_neuropsicologico" step="0.01" 
+                                   value="{{ configs.valor_teste_neuropsicologico }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="valor_consulta_sessao" class="form-label">Valor Consulta/Sessão (R$)</label>
+                            <input type="number" class="form-control" name="valor_consulta_sessao" step="0.01" 
+                                   value="{{ configs.valor_consulta_sessao }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="valor_sessao_padrao" class="form-label">Valor Padrão por Sessão (R$)</label>
+                            <input type="number" class="form-control" name="valor_sessao_padrao" step="0.01" 
+                                   value="{{ configs.valor_sessao_padrao }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sessoes_max" class="form-label">Número Máximo de Sessões</label>
+                            <input type="number" class="form-control" name="sessoes_max" 
+                                   value="{{ configs.sessoes_max }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Impostos (%)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="imposto_ir" class="form-label">Imposto de Renda (%)</label>
+                            <input type="number" class="form-control" name="imposto_ir" step="0.1" 
+                                   value="{{ configs.imposto_ir }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="imposto_inss" class="form-label">INSS (%)</label>
+                            <input type="number" class="form-control" name="imposto_inss" step="0.1" 
+                                   value="{{ configs.imposto_inss }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="imposto_iss" class="form-label">ISS (%)</label>
+                            <input type="number" class="form-control" name="imposto_iss" step="0.1" 
+                                   value="{{ configs.imposto_iss }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Salvar Configurações
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

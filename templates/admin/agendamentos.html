@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Agendamentos do Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Todos os Agendamentos do Sistema
+                    </h3>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Statistics Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-2">
+                            <div class="card text-center bg-primary text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.total }}</h4>
+                                    <small>Total</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-info text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.futuros }}</h4>
+                                    <small>Futuros</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.pendentes }}</h4>
+                                    <small>Pendentes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-success text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.confirmados }}</h4>
+                                    <small>Confirmados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-danger text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.cancelados }}</h4>
+                                    <small>Cancelados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="card text-center bg-dark text-white">
+                                <div class="card-body">
+                                    <h4>{{ stats.taxa_confirmacao }}%</h4>
+                                    <small>Taxa Confirmação</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs" id="agendamentosTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="futuros-tab" data-bs-toggle="tab" data-bs-target="#futuros" type="button" role="tab">
+                                <i class="fas fa-calendar-plus me-2"></i>Futuros ({{ stats.futuros }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="equipes-tab" data-bs-toggle="tab" data-bs-target="#equipes" type="button" role="tab">
+                                <i class="fas fa-users me-2"></i>Por Equipe
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="medicos-tab" data-bs-toggle="tab" data-bs-target="#medicos" type="button" role="tab">
+                                <i class="fas fa-user-md me-2"></i>Por Médico
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="passados-tab" data-bs-toggle="tab" data-bs-target="#passados" type="button" role="tab">
+                                <i class="fas fa-history me-2"></i>Passados ({{ stats.passados }})
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-3" id="agendamentosTabContent">
+                        
+                        <!-- Future Appointments Tab -->
+                        <div class="tab-pane fade show active" id="futuros" role="tabpanel">
+                            {% if agendamentos_futuros %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Paciente</th>
+                                            <th>Médico</th>
+                                            <th>Equipe</th>
+                                            <th>Data/Hora</th>
+                                            <th>Status</th>
+                                            <th>Telefone</th>
+                                            <th>Observações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for agendamento in agendamentos_futuros %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ agendamento.paciente_nome }}</strong><br>
+                                                <small class="text-muted">{{ agendamento.paciente_cpf }}</small>
+                                            </td>
+                                            <td>{{ agendamento.medico_nome }}</td>
+                                            <td>{{ agendamento.equipe_nome or 'Externo' }}</td>
+                                            <td>
+                                                <strong>{{ agendamento.data_formatada }}</strong><br>
+                                                <small>{{ agendamento.hora_formatada }} ({{ agendamento.periodo }})</small>
+                                            </td>
+                                            <td>
+                                                {% if agendamento.confirmado is none %}
+                                                    <span class="badge bg-warning">Pendente</span>
+                                                {% elif agendamento.confirmado == 1 %}
+                                                    <span class="badge bg-success">Confirmado</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Cancelado</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ agendamento.paciente_telefone or '-' }}</td>
+                                            <td>{{ agendamento.observacoes or '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar-plus fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted">Nenhum agendamento futuro</h6>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- By Team Tab -->
+                        <div class="tab-pane fade" id="equipes" role="tabpanel">
+                            {% if agendamentos_por_equipe %}
+                            {% for equipe, agendamentos in agendamentos_por_equipe.items() %}
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-users me-2"></i>
+                                        {{ equipe }}
+                                        <span class="badge bg-primary ms-2">{{ agendamentos|length }} agendamentos</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Paciente</th>
+                                                    <th>Médico</th>
+                                                    <th>Data/Hora</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for agendamento in agendamentos %}
+                                                <tr>
+                                                    <td>{{ agendamento.paciente_nome }}</td>
+                                                    <td>{{ agendamento.medico_nome }}</td>
+                                                    <td>{{ agendamento.data_formatada }} {{ agendamento.hora_formatada }}</td>
+                                                    <td>
+                                                        {% if agendamento.confirmado is none %}
+                                                            <span class="badge bg-warning text-dark">Pendente</span>
+                                                        {% elif agendamento.confirmado == 1 %}
+                                                            <span class="badge bg-success">Confirmado</span>
+                                                        {% else %}
+                                                            <span class="badge bg-danger">Cancelado</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted">Nenhuma equipe com agendamentos</h6>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- By Doctor Tab -->
+                        <div class="tab-pane fade" id="medicos" role="tabpanel">
+                            {% if agendamentos_por_medico %}
+                            <div class="row">
+                                {% for medico, agendamentos in agendamentos_por_medico.items() %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-user-md me-2"></i>
+                                                {{ medico }}
+                                                <span class="badge bg-primary ms-2">{{ agendamentos|length }}</span>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for agendamento in agendamentos[:5] %}
+                                            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                                <div>
+                                                    <small><strong>{{ agendamento.paciente_nome }}</strong></small><br>
+                                                    <small class="text-muted">{{ agendamento.data_formatada }} {{ agendamento.hora_formatada }}</small>
+                                                </div>
+                                                <div>
+                                                    {% if agendamento.confirmado is none %}
+                                                        <span class="badge bg-warning text-dark">Pendente</span>
+                                                    {% elif agendamento.confirmado == 1 %}
+                                                        <span class="badge bg-success">Confirmado</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Cancelado</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                            {% if agendamentos|length > 5 %}
+                                            <small class="text-muted">... e mais {{ agendamentos|length - 5 }} agendamento(s)</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-user-md fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted">Nenhum médico com agendamentos</h6>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Past Appointments Tab -->
+                        <div class="tab-pane fade" id="passados" role="tabpanel">
+                            {% if agendamentos_passados %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Paciente</th>
+                                            <th>Médico</th>
+                                            <th>Equipe</th>
+                                            <th>Data/Hora</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for agendamento in agendamentos_passados[:50] %}
+                                        <tr>
+                                            <td>{{ agendamento.paciente_nome }}</td>
+                                            <td>{{ agendamento.medico_nome }}</td>
+                                            <td>{{ agendamento.equipe_nome or 'Externo' }}</td>
+                                            <td>{{ agendamento.data_formatada }} {{ agendamento.hora_formatada }}</td>
+                                            <td>
+                                                {% if agendamento.confirmado is none %}
+                                                    <span class="badge bg-secondary">Não confirmado</span>
+                                                {% elif agendamento.confirmado == 1 %}
+                                                    <span class="badge bg-success">Confirmado</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Cancelado</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% if agendamentos_passados|length > 50 %}
+                                <p class="text-muted text-center">Mostrando os 50 agendamentos mais recentes de {{ agendamentos_passados|length }} total</p>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-history fa-2x text-muted mb-3"></i>
+                                <h6 class="text-muted">Nenhum agendamento passado</h6>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Sessões - {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="fas fa-calendar-alt"></i> Sessões - {{ paciente.nome }}</h1>
+            <p class="text-muted">CPF: {{ paciente.cpf }} | Status: 
+                <span class="badge bg-{{ 'success' if paciente.status == 'ativo' else ('primary' if paciente.status == 'finalizado' else 'secondary') }}">
+                    {{ paciente.status.title() }}
+                </span>
+            </p>
+        </div>
+        <a href="{{ url_for('medico.pacientes') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Sessões -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-calendar-check"></i> Sessões ({{ sessoes|length }}/8)</h5>
+                    {% if paciente.status == 'ativo' and sessoes|length < 8 %}
+                    <form method="POST" action="{{ url_for('medico.nova_sessao', paciente_id=paciente.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Nova Sessão ({{ sessoes|length + 1 }})
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if sessoes %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Sessão</th>
+                                        <th>Data</th>
+                                        <th>Observações</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sessao in sessoes %}
+                                    <tr>
+                                        <td data-label="Sessão">{{ sessao.numero_sessao }}</td>
+                                        <td data-label="Data">
+                                            {% if sessao.data_sessao %}
+                                                {{ sessao.data_sessao[:10] if sessao.data_sessao|length >= 10 else sessao.data_sessao }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td data-label="Observações">{{ sessao.observacoes or '-' }}</td>
+                                        <td data-label="Status">
+                                            <span class="badge bg-{{ 'success' if sessao.realizada else 'warning' }}">
+                                                {{ 'Realizada' if sessao.realizada else 'Pendente' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if not sessao.realizada and paciente.status == 'ativo' %}
+                                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#realizarSessaoModal{{ sessao.id }}">
+                                                <i class="fas fa-check"></i> Realizar
+                                            </button>
+                                            {% else %}
+                                            <span class="text-success">
+                                                <i class="fas fa-check-circle"></i>
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Progresso das Sessões</span>
+                                <span>{{ paciente.sessoes_realizadas }}/8</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ (paciente.sessoes_realizadas / 8 * 100)|round(1) }}%">
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                {% if paciente.sessoes_realizadas == 8 %}
+                                    ✓ Todas as sessões foram realizadas
+                                {% elif paciente.sessoes_realizadas > 0 %}
+                                    {{ 8 - paciente.sessoes_realizadas }} sessões restantes
+                                {% else %}
+                                    Nenhuma sessão realizada ainda
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                    {% else %}
+                        <p class="text-muted">Nenhuma sessão criada ainda. Use o botão "Nova Sessão" para começar.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Senhas e Laudos -->
+        <div class="col-md-6">
+            <!-- Senhas do Convênio -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-clipboard-list"></i> Senhas</h5>
+                    {% set tipos_registrados = senhas_paciente | map(attribute='tipo') | list %}
+                    {% if senhas_paciente|length < 2 %}
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSenhaModal">
+                        <i class="fas fa-plus"></i> Registrar ({{ senhas_paciente|length }}/2)
+                    </button>
+                    {% else %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-check"></i> Completo (2/2)
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div id="senhas-list">
+                        {% set tipos_registrados = senhas_paciente | map(attribute='tipo') | list %}
+                        {% if senhas_paciente %}
+                            {% for senha in senhas_paciente %}
+                            <div class="card bg-light mb-2">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ senha.tipo.replace('_', ' ').title() }}</strong><br>
+                                            <small class="text-muted">{{ senha.data_criacao[:10] if senha.data_criacao else '-' }}</small>
+                                        </div>
+                                        <div>
+                                            {% if senha.aprovada_admin == 1 %}
+                                                <span class="badge bg-success">Aprovada</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pendente</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Progress indicator -->
+                            <div class="mt-3 p-2 bg-info bg-opacity-10 rounded">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Progresso: {{ senhas_paciente|length }}/2 tipos registrados
+                                    {% if senhas_paciente|length < 2 %}
+                                        <br><strong>Faltam:</strong>
+                                        {% if 'teste_neuropsicologico' not in tipos_registrados %}
+                                            Teste Neuropsicológico
+                                        {% endif %}
+                                        {% if 'consulta_sessao' not in tipos_registrados %}
+                                            {% if 'teste_neuropsicologico' not in tipos_registrados %}, {% endif %}
+                                            Consulta/Sessão
+                                        {% endif %}
+                                    {% else %}
+                                        <br><strong>✓ Todos os tipos obrigatórios registrados</strong>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Nenhuma senha registrada!</strong><br>
+                                <small>Este paciente precisa ter 2 tipos: Teste Neuropsicológico e Consulta/Sessão</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Laudos -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-file-pdf"></i> Laudos</h5>
+                    {% if paciente.status == 'ativo' %}
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadLaudoModal">
+                        <i class="fas fa-upload"></i> Enviar Laudo
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if laudos %}
+                        <div class="list-group">
+                            {% for laudo in laudos %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ laudo.arquivo_nome }}</h6>
+                                    <small>{{ laudo.data_upload[:10] if laudo.data_upload else '' }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">
+                            Nenhum laudo enviado ainda. 
+                            <strong>É obrigatório enviar o laudo para finalizar o paciente.</strong>
+                        </p>
+                    {% endif %}
+                    
+                    <!-- Finalize Patient Button -->
+                    {% if laudos and paciente.status == 'ativo' %}
+                    <div class="mt-3">
+                        <form method="POST" action="{{ url_for('medico.finalizar_paciente', paciente_id=paciente.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-success w-100" 
+                                    onclick="return confirm('Finalizar paciente? Esta ação não pode ser desfeita.')">
+                                <i class="fas fa-check-double"></i> Finalizar Paciente
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Próxima Consulta -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-calendar-plus"></i> Próxima Consulta</h5>
+                    {% if paciente.status == 'ativo' %}
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#agendarConsultaModal">
+                        <i class="fas fa-calendar-plus"></i> Agendar
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if agendamento_ativo %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-clock"></i> Consulta Agendada</h6>
+                            <p class="mb-1"><strong>Data:</strong> {{ agendamento_ativo.data_agendamento[:16] if agendamento_ativo.data_agendamento else '' }}</p>
+                            {% if agendamento_ativo.observacoes %}
+                            <p class="mb-1"><strong>Observações:</strong> {{ agendamento_ativo.observacoes }}</p>
+                            {% endif %}
+                            {% if agendamento_ativo.confirmacao_disponivel %}
+                                <span class="badge bg-warning">Aguardando confirmação do paciente</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Confirmação será liberada 1 dia antes</span>
+                            {% endif %}
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#agendarConsultaModal">
+                            <i class="fas fa-edit"></i> Reagendar
+                        </button>
+                    {% else %}
+                        <p class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Nenhuma consulta agendada. Use o botão "Agendar" para marcar a próxima consulta.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Laudo Modal -->
+{% if paciente.status == 'ativo' %}
+<div class="modal fade" id="uploadLaudoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enviar Laudo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('medico.upload_laudo', paciente_id=paciente.id) }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="arquivo" class="form-label">Arquivo do Laudo</label>
+                        <input type="file" class="form-control" name="arquivo" required>
+                        <div class="form-text">Qualquer tipo de arquivo é aceito (PDF, DOC, JPG, etc.).</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar Laudo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modais para Realizar Sessões -->
+{% for sessao in sessoes %}
+{% if not sessao.realizada and paciente.status == 'ativo' %}
+<div class="modal fade" id="realizarSessaoModal{{ sessao.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Realizar Sessão {{ sessao.numero_sessao }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('medico.realizar_sessao', sessao_id=sessao.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="data_sessao{{ sessao.id }}" class="form-label">Data da Sessão</label>
+                        <input type="date" class="form-control" name="data_sessao" id="data_sessao{{ sessao.id }}" required>
+                        <div class="form-text">Informe a data em que a sessão foi realizada.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Marcar como Realizada</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- Modal para Agendar Consulta -->
+<div class="modal fade" id="agendarConsultaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {% if agendamento_ativo %}
+                        Reagendar Consulta
+                    {% else %}
+                        Agendar Próxima Consulta
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('medico.agendar_consulta', paciente_id=paciente.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        O paciente poderá confirmar presença 1 dia antes da consulta.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="data_agendamento" class="form-label">Data e Hora da Consulta *</label>
+                        <input type="datetime-local" class="form-control" name="data_agendamento" 
+                               id="data_agendamento" required
+                               value="{{ agendamento_ativo.data_agendamento[:16] if agendamento_ativo and agendamento_ativo.data_agendamento else '' }}">
+                        <div class="form-text">Selecione a data e hora para a próxima consulta</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observacoes" class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" id="observacoes" rows="3" 
+                                  placeholder="Observações sobre a consulta (opcional)">{{ agendamento_ativo.observacoes if agendamento_ativo else '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        {% if agendamento_ativo %}
+                            <i class="fas fa-edit"></i> Reagendar
+                        {% else %}
+                            <i class="fas fa-calendar-plus"></i> Agendar
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Senha -->
+<div class="modal fade" id="addSenhaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Tipo de Senha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('medico.adicionar_senha', paciente_id=paciente.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Registre o tipo de senha para este paciente. A aprovação e valores ficam com a administração.
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Atenção:</strong> Todo paciente deve ter DUAS senhas registradas: uma para Teste Neuropsicológico e uma para Consulta/Sessão. Verifique se já existe alguma antes de registrar.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="tipo_senha" class="form-label">Tipo de Senha *</label>
+                        <select class="form-select" id="tipo_senha" name="tipo_senha" required>
+                            <option value="">Selecione...</option>
+                            {% set tipos_existentes = senhas_paciente | map(attribute='tipo') | list %}
+                            {% if 'teste_neuropsicologico' not in tipos_existentes %}
+                            <option value="teste_neuropsicologico">Teste Neuropsicológico (R$ 800)</option>
+                            {% endif %}
+                            {% if 'consulta_sessao' not in tipos_existentes %}
+                            <option value="consulta_sessao">Consulta/Sessão (R$ 80)</option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Cada paciente deve ter os dois tipos de senha</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar Senha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set today's date as default for all date inputs
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        if (!input.value) {
+            input.value = today;
+        }
+    });
+});
+</script>
+
+{% endblock %}

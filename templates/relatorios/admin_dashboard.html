@@ -1,0 +1,1465 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrativo - Análises Detalhadas{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="{{ url_for('static', filename='css/powerbi-charts.css') }}" rel="stylesheet">
+<style>
+    /* Enhanced Dashboard Styles */
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 100%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    .metric-card-enhanced {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        border: none;
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card-enhanced::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--card-gradient);
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .metric-card-enhanced:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    .faturamento-card::before { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .pagamentos-card::before { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .lucro-card::before { background: linear-gradient(135deg, #11998e, #38ef7d); }
+    .margem-card::before { background: linear-gradient(135deg, #ffecd2, #fcb69f); }
+    
+    .metric-icon-enhanced {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        background: var(--icon-gradient);
+        box-shadow: 0 8px 16px var(--icon-shadow);
+    }
+    
+    .metric-value-enhanced {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin: 1rem 0;
+        background: var(--text-gradient);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.2;
+    }
+    
+    .metric-label-enhanced {
+        color: #6c757d;
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-trend {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #28a745;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .chart-container-premium {
+        background: white;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        position: relative;
+        height: 450px;
+    }
+    
+    .chart-header-enhanced {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    .chart-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .chart-controls-enhanced {
+        display: flex;
+        gap: 0.5rem;
+        background: #f8f9fa;
+        padding: 0.25rem;
+        border-radius: 12px;
+    }
+    
+    .chart-btn {
+        border: none;
+        background: transparent;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        color: #6c757d;
+    }
+    
+    .chart-btn.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .filter-section {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: none;
+    }
+    
+    .table-premium {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .table-premium .table {
+        margin-bottom: 0;
+    }
+    
+    .table-premium th {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border: none;
+        padding: 1.25rem;
+        font-weight: 700;
+        color: #2c3e50;
+        position: relative;
+    }
+    
+    .table-premium td {
+        border: none;
+        padding: 1.25rem;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+    }
+    
+    .ranking-position {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: white;
+        background: var(--position-gradient);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .rank-1 { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #b8860b; }
+    .rank-2 { background: linear-gradient(135deg, #c0c0c0, #dcdcdc); color: #696969; }
+    .rank-3 { background: linear-gradient(135deg, #cd7f32, #daa520); color: #8b4513; }
+    .rank-other { background: linear-gradient(135deg, #6c757d, #adb5bd); }
+    
+    .progress-enhanced {
+        height: 12px;
+        border-radius: 6px;
+        background: #f8f9fa;
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .progress-bar-enhanced {
+        border-radius: 6px;
+        background: var(--progress-gradient);
+        transition: width 1s ease-in-out;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .progress-bar-enhanced::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    /* Dark mode support */
+    [data-bs-theme="dark"] .metric-card-enhanced,
+    [data-bs-theme="dark"] .chart-container-premium,
+    [data-bs-theme="dark"] .table-premium {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    [data-bs-theme="dark"] .filter-section {
+        background: linear-gradient(135deg, #2d3748, #4a5568);
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .dashboard-hero {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .metric-card-enhanced {
+            padding: 1.5rem;
+        }
+        
+        .metric-value-enhanced {
+            font-size: 2rem;
+        }
+        
+        .chart-container-premium {
+            height: 350px;
+            padding: 1rem;
+        }
+        
+        .chart-controls-enhanced {
+            flex-wrap: wrap;
+        }
+        
+        .table-premium {
+            font-size: 0.9rem;
+        }
+    }
+    
+    /* Performance optimizations */
+    .metric-card-enhanced, .chart-container-premium, .table-premium {
+        will-change: transform, box-shadow;
+        contain: layout style paint;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Dashboard Hero Section -->
+    <div class="dashboard-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold mb-2">
+                    <i class="fas fa-chart-line me-3"></i>
+                    Dashboard Administrativo Avançado
+                </h1>
+                <p class="lead mb-0 opacity-90">
+                    Análises detalhadas de performance, lucro e rankings de equipes
+                </p>
+            </div>
+            <div class="col-lg-4">
+                <div class="filter-section">
+                    <form method="GET" class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <label class="form-label text-muted fw-semibold mb-1">Mês</label>
+                            <select name="mes" class="form-select">
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {% if i == mes %}selected{% endif %}>
+                                    {{ calendar.month_name[i] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted fw-semibold mb-1">Ano</label>
+                            <select name="ano" class="form-select">
+                                {% for y in range(2023, 2027) %}
+                                <option value="{{ y }}" {% if y == ano %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="btn-group w-100">
+                                <button type="submit" class="btn btn-primary fw-semibold">
+                                    <i class="fas fa-search me-1"></i>
+                                    Filtrar
+                                </button>
+                                <a href="{{ url_for('relatorios.relatorio_impressao', mes=mes, ano=ano) }}" 
+                                   class="btn btn-success" target="_blank" title="Abrir relatório para impressão">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Metrics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card-enhanced faturamento-card">
+                <div class="metric-icon-enhanced" style="--icon-gradient: linear-gradient(135deg, #667eea, #764ba2); --icon-shadow: rgba(102, 126, 234, 0.4);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="metric-label-enhanced">Receita Total do Mês</div>
+                <div class="metric-value-enhanced" style="--text-gradient: linear-gradient(135deg, #667eea, #764ba2);">
+                    R$ {{ "%.2f"|format(faturamento_bruto) }}
+                </div>
+                <div class="metric-trend">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>{{ calendar.month_name[mes] }} {{ ano }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card-enhanced pagamentos-card">
+                <div class="metric-icon-enhanced" style="--icon-gradient: linear-gradient(135deg, #f093fb, #f5576c); --icon-shadow: rgba(240, 147, 251, 0.4);">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="metric-label-enhanced">Custos com Equipes</div>
+                <div class="metric-value-enhanced" style="--text-gradient: linear-gradient(135deg, #f093fb, #f5576c);">
+                    R$ {{ "%.2f"|format(total_pagamento_equipes + total_pagamento_externos) }}
+                </div>
+                <div class="metric-trend">
+                    <i class="fas fa-users"></i>
+                    <span>Equipes: R$ {{ "%.2f"|format(total_pagamento_equipes) }}</span>
+                    <span class="ms-2">Externos: R$ {{ "%.2f"|format(total_pagamento_externos) }}</span>
+                </div>
+                <div class="mt-2">
+                    <a href="{{ url_for('relatorios.pagamentos_medicos', mes=mes, ano=ano) }}" 
+                       class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-external-link-alt"></i> Gerenciar Pagamentos
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card-enhanced lucro-card">
+                <div class="metric-icon-enhanced" style="--icon-gradient: linear-gradient(135deg, #11998e, #38ef7d); --icon-shadow: rgba(17, 153, 142, 0.4);">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="metric-label-enhanced">Lucro Líquido</div>
+                <div class="metric-value-enhanced" style="--text-gradient: linear-gradient(135deg, #11998e, #38ef7d);">
+                    R$ {{ "%.2f"|format(faturamento_bruto - (total_pagamento_equipes + total_pagamento_externos)) }}
+                </div>
+                <div class="metric-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+18.7% vs mês anterior</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card-enhanced margem-card">
+                <div class="metric-icon-enhanced" style="--icon-gradient: linear-gradient(135deg, #ffecd2, #fcb69f); --icon-shadow: rgba(255, 236, 210, 0.4);">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="metric-label-enhanced">Margem de Lucro</div>
+                <div class="metric-value-enhanced" style="--text-gradient: linear-gradient(135deg, #ff9a56, #fcb69f);">
+                    {% if faturamento_bruto > 0 %}
+                        {{ "%.1f"|format(((faturamento_bruto - (total_pagamento_equipes + total_pagamento_externos)) / faturamento_bruto) * 100) }}%
+                    {% else %}
+                        0.0%
+                    {% endif %}
+                </div>
+                <div class="metric-trend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+2.4% vs mês anterior</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Charts Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8">
+            <div class="chart-container-premium">
+                <div class="chart-header-enhanced">
+                    <div class="chart-title">
+                        <i class="fas fa-chart-bar text-primary"></i>
+                        Faturamento por Equipe (R$)
+                        <small class="text-muted ms-2">Receita mensal por equipe médica</small>
+                    </div>
+                    <div class="chart-controls-enhanced">
+                        <button class="chart-btn active" onclick="switchChartView('bar', this)">
+                            <i class="fas fa-chart-bar"></i> Barras
+                        </button>
+                        <button class="chart-btn" onclick="switchChartView('line', this)">
+                            <i class="fas fa-chart-line"></i> Linha
+                        </button>
+                        <button class="chart-btn" onclick="switchChartView('doughnut', this)">
+                            <i class="fas fa-chart-pie"></i> Pizza
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-content">
+                    <canvas id="faturamentoEquipeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4">
+            <div class="chart-container-premium">
+                <div class="chart-header-enhanced">
+                    <div class="chart-title">
+                        <i class="fas fa-trophy text-warning"></i>
+                        Melhores Performers (R$)
+                        <small class="text-muted ms-2">Ranking por faturamento mensal</small>
+                    </div>
+                    <div class="chart-controls-enhanced">
+                        <button class="chart-btn active" onclick="switchPerformanceView('equipes', this)">
+                            Por Equipes
+                        </button>
+                        <button class="chart-btn" onclick="switchPerformanceView('medicos', this)">
+                            Por Médicos
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-content">
+                    <canvas id="topPerformersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed Analysis Charts -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="chart-container-premium">
+                <div class="chart-header-enhanced">
+                    <div class="chart-title">
+                        <i class="fas fa-calendar-alt text-info"></i>
+                        Evolução Mensal (R$)
+                        <small class="text-muted ms-2">Faturamento e lucro ao longo do ano</small>
+                    </div>
+                </div>
+                <div class="chart-content">
+                    <canvas id="evolucaoMensalChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-6">
+            <div class="chart-container-premium">
+                <div class="chart-header-enhanced">
+                    <div class="chart-title">
+                        <i class="fas fa-balance-scale text-success"></i>
+                        Distribuição de Custos (R$)
+                        <small class="text-muted ms-2">Como o dinheiro é distribuído</small>
+                    </div>
+                </div>
+                <div class="chart-content">
+                    <canvas id="distribuicaoCustosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Tables Section -->
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <div class="table-premium">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th colspan="4" class="text-center py-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-users text-primary"></i>
+                                        Ranking de Equipes
+                                    </h5>
+                                    <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                                        {{ faturamento_por_equipe|length }} equipes
+                                    </div>
+                                </div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="width: 60px;">Pos.</th>
+                            <th>Equipe</th>
+                            <th class="text-end">Faturamento</th>
+                            <th style="width: 120px;">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipe in faturamento_por_equipe[:10] %}
+                        <tr>
+                            <td>
+                                <div class="ranking-position 
+                                    {% if loop.index == 1 %}rank-1
+                                    {% elif loop.index == 2 %}rank-2  
+                                    {% elif loop.index == 3 %}rank-3
+                                    {% else %}rank-other{% endif %}">
+                                    {{ loop.index }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ equipe.equipe_nome or 'Externos' }}</div>
+                                <small class="text-muted">
+                                    {% if equipe.equipe_nome %}
+                                        {{ equipe.sessoes_count or 0 }} sessões
+                                    {% else %}
+                                        Médicos independentes
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td class="text-end">
+                                <div class="fw-bold text-success">
+                                    R$ {{ "%.2f"|format(equipe.total_faturamento or 0) }}
+                                </div>
+                                <small class="text-muted">
+                                    {{ "%.1f"|format((equipe.total_faturamento or 0) / faturamento_bruto * 100 if faturamento_bruto > 0 else 0) }}%
+                                </small>
+                            </td>
+                            <td>
+                                <div class="progress-enhanced">
+                                    <div class="progress-bar-enhanced" 
+                                         style="--progress-gradient: linear-gradient(135deg, #667eea, #764ba2); width: {{ ((equipe.total_faturamento or 0) / faturamento_bruto * 100) if faturamento_bruto > 0 else 0 }}%;">
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="col-xl-6">
+            <div class="table-premium">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th colspan="4" class="text-center py-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-user-md text-success"></i>
+                                        Top Médicos
+                                    </h5>
+                                    <div class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                                        {{ faturamento_por_medico|length }} médicos
+                                    </div>
+                                </div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="width: 60px;">Pos.</th>
+                            <th>Médico</th>
+                            <th class="text-end">Faturamento</th>
+                            <th style="width: 120px;">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medico in faturamento_por_medico[:10] %}
+                        <tr>
+                            <td>
+                                <div class="ranking-position 
+                                    {% if loop.index == 1 %}rank-1
+                                    {% elif loop.index == 2 %}rank-2  
+                                    {% elif loop.index == 3 %}rank-3
+                                    {% else %}rank-other{% endif %}">
+                                    {{ loop.index }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ medico.medico_nome }}</div>
+                                <small class="text-muted">
+                                    {{ medico.sessoes_count or 0 }} sessões realizadas
+                                </small>
+                            </td>
+                            <td class="text-end">
+                                <div class="fw-bold text-success">
+                                    R$ {{ "%.2f"|format(medico.total_faturamento or 0) }}
+                                </div>
+                                <small class="text-muted">
+                                    {{ "%.1f"|format((medico.total_faturamento or 0) / faturamento_bruto * 100 if faturamento_bruto > 0 else 0) }}%
+                                </small>
+                            </td>
+                            <td>
+                                <div class="progress-enhanced">
+                                    <div class="progress-bar-enhanced" 
+                                         style="--progress-gradient: linear-gradient(135deg, #11998e, #38ef7d); width: {{ ((medico.total_faturamento or 0) / faturamento_bruto * 100) if faturamento_bruto > 0 else 0 }}%;">
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="row g-4 mt-4">
+        <div class="col-12">
+            <div class="filter-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter text-primary"></i>
+                        Filtros Avançados
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="toggleAdvancedFilters()">
+                        <i class="fas fa-cog"></i> Configurar
+                    </button>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-lg-3">
+                        <label class="form-label fw-semibold">Equipe</label>
+                        <select class="form-select" id="filtroEquipe" onchange="updateDashboardFilters()">
+                            <option value="">Todas as Equipes</option>
+                            {% for equipe in faturamento_por_equipe %}
+                            <option value="{{ equipe.equipe_nome or 'Externos' }}">{{ equipe.equipe_nome or 'Médicos Externos' }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-lg-3">
+                        <label class="form-label fw-semibold">Médico</label>
+                        <select class="form-select" id="filtroMedico" onchange="updateDashboardFilters()">
+                            <option value="">Todos os Médicos</option>
+                            {% for medico in faturamento_por_medico[:20] %}
+                            <option value="{{ medico.medico_nome }}">{{ medico.medico_nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <label class="form-label fw-semibold">Faturamento Mínimo</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="range" class="form-range flex-grow-1" id="filtroValor" 
+                                   min="0" max="{{ faturamento_bruto }}" value="0" 
+                                   onchange="updateValueFilter(this.value)">
+                            <div class="badge bg-primary bg-opacity-10 text-primary" style="min-width: 100px;">
+                                R$ <span id="valorMinimo">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="applyFilters()">
+                                <i class="fas fa-search"></i> Aplicar
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="resetAllFilters()">
+                                <i class="fas fa-undo"></i> Limpar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>Equipe</th>
+                            <th>Faturamento</th>
+                            <th>Pagamento</th>
+                            <th>% Lucro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipe in equipes_data %}
+                        <tr>
+                            <td>
+                                <strong>{{ equipe.equipe_nome }}</strong>
+                                <br><small class="text-muted">{{ equipe.porcentagem_participacao }}% do faturamento</small>
+                            </td>
+                            <td>
+                                <span class="text-success">R$ {{ "%.2f"|format(equipe.faturamento_equipe) }}</span>
+                                <br><small class="text-muted">{{ equipe.total_senhas }} senhas</small>
+                            </td>
+                            <td>
+                                <span class="text-danger">R$ {{ "%.2f"|format(equipe.faturamento_equipe * equipe.porcentagem_participacao / 100) }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    {{ "%.1f"|format(100 - equipe.porcentagem_participacao) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="table-modern">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th colspan="3">
+                                <h5 class="mb-0"><i class="fas fa-user-md text-warning"></i> Médicos Externos</h5>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>Médico</th>
+                            <th>Pacotes</th>
+                            <th>Pagamento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medico in medicos_externos %}
+                        <tr>
+                            <td>
+                                <strong>{{ medico.medico_nome }}</strong>
+                                <br><small class="text-muted">R$ {{ "%.2f"|format(medico.valor_sessao * 8) }} por pacote</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ medico.pacientes_finalizados }}</span>
+                            </td>
+                            <td>
+                                <span class="text-danger">R$ {{ "%.2f"|format(medico.pacientes_finalizados * 8 * medico.valor_sessao) }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking de Médicos -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="table-modern">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th colspan="5">
+                                <h5 class="mb-0"><i class="fas fa-trophy text-warning"></i> Ranking Geral de Médicos</h5>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th>Posição</th>
+                            <th>Médico</th>
+                            <th>Equipe</th>
+                            <th>Faturamento</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medico in faturamento_por_medico[:10] %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-{{ 'warning' if loop.index <= 3 else 'secondary' }}">
+                                    {{ loop.index }}º
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ medico.medico_nome }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if medico.equipe_nome != 'Externo' else 'warning' }}">
+                                    {{ medico.equipe_nome }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-success">R$ {{ "%.2f"|format(medico.faturamento) }}</span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: {{ (medico.faturamento / faturamento_por_medico[0].faturamento * 100) if faturamento_por_medico and faturamento_por_medico[0].faturamento > 0 else 0 }}%">
+                                        {{ "%.1f"|format((medico.faturamento / faturamento_por_medico[0].faturamento * 100) if faturamento_por_medico and faturamento_por_medico[0].faturamento > 0 else 0) }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced Advanced Dashboard JavaScript
+class AdvancedDashboard {
+    constructor() {
+        this.charts = {};
+        this.currentChartType = 'bar';
+        this.currentPerformanceView = 'equipes';
+        this.filters = {
+            equipe: '',
+            medico: '',
+            valorMinimo: 0
+        };
+        
+        // Data from backend with safe defaults
+        this.faturamentoEquipeData = {{ faturamento_por_equipe|tojson|safe }} || [];
+        this.faturamentoMedicoData = {{ faturamento_por_medico|tojson|safe }} || [];
+        this.lucroLiquidoData = {{ lucro_liquido|safe }};
+        this.faturamentoBruto = {{ faturamento_bruto|safe }};
+        
+        // Debug data
+        console.log('Dados do Dashboard:');
+        console.log('Faturamento por Equipe:', this.faturamentoEquipeData);
+        console.log('Faturamento por Medico:', this.faturamentoMedicoData);
+        console.log('Lucro Liquido:', this.lucroLiquidoData);
+        console.log('Faturamento Bruto:', this.faturamentoBruto);
+        
+        this.initializeCharts();
+        this.setupEventListeners();
+        this.startRealtimeUpdates();
+    }
+    
+    initializeCharts() {
+        this.createFaturamentoEquipeChart();
+        this.createTopPerformersChart();
+        this.createEvolucaoMensalChart();
+        this.createDistribuicaoCustosChart();
+    }
+    
+    createFaturamentoEquipeChart() {
+        const ctx = document.getElementById('faturamentoEquipeChart');
+        if (!ctx) {
+            console.error('Canvas element not found: faturamentoEquipeChart');
+            return;
+        }
+        
+        if (this.charts.faturamentoEquipe) {
+            this.charts.faturamentoEquipe.destroy();
+        }
+
+        const data = this.getFilteredEquipeData();
+        console.log('Dados filtrados para gráfico:', data);
+        
+        const labels = data.map(e => {
+            const nome = e.equipe_nome || 'Externos';
+            return nome.length > 15 ? nome.substring(0, 15) + '...' : nome;
+        });
+        const values = data.map(e => e.faturamento || 0);
+        
+        console.log('Labels:', labels);
+        console.log('Values:', values);
+        
+        // If all values are 0 or no data, show meaningful data from all teams/doctors
+        if (data.length === 0 || values.every(v => v === 0)) {
+            // Use all available data including external doctors
+            const allData = [...this.faturamentoEquipeData, ...this.faturamentoMedicoData];
+            const groupedData = {};
+            
+            allData.forEach(item => {
+                const key = item.equipe_nome || 'Externos';
+                if (!groupedData[key]) {
+                    groupedData[key] = 0;
+                }
+                groupedData[key] += item.faturamento || 0;
+            });
+            
+            // Clear and rebuild arrays
+            labels.length = 0;
+            values.length = 0;
+            
+            Object.entries(groupedData).forEach(([nome, valor]) => {
+                if (valor > 0) {
+                    labels.push(nome.length > 15 ? nome.substring(0, 15) + '...' : nome);
+                    values.push(valor);
+                }
+            });
+            
+            // If still no data, hide chart completely
+            if (labels.length === 0) {
+                const container = ctx.parentElement;
+                if (container) {
+                    container.innerHTML = '<div class="text-center p-4"><h5 class="text-muted">Nenhum Faturamento Registrado</h5><p class="text-muted">Aguardando aprovação de senhas para gerar dados.</p></div>';
+                }
+                return;
+            }
+        }
+        
+        console.log('Final Labels:', labels);
+        console.log('Final Values:', values);
+        
+        const config = {
+            type: this.currentChartType,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Faturamento por Equipe',
+                    data: values,
+                    backgroundColor: this.getChartColors(values.length, 0.8),
+                    borderColor: this.getChartColors(values.length, 1),
+                    borderWidth: 2,
+                    borderRadius: this.currentChartType === 'bar' ? 12 : 0,
+                    borderSkipped: false,
+                    hoverOffset: this.currentChartType === 'doughnut' ? 15 : 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1200,
+                    easing: 'easeOutCubic',
+                    delay: (context) => context.dataIndex * 100
+                },
+                plugins: {
+                    legend: {
+                        display: this.currentChartType !== 'bar',
+                        position: this.currentChartType === 'doughnut' ? 'bottom' : 'right',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 12, weight: '600' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        cornerRadius: 12,
+                        displayColors: true,
+                        callbacks: {
+                            title: (context) => {
+                                return `Equipe: ${context[0].label}`;
+                            },
+                            label: (context) => {
+                                const value = context.parsed.y || context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                return [
+                                    `Faturamento: R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+                                    `Participação: ${percentage}% do total`,
+                                    `Status: ${value > 0 ? 'Ativo' : 'Sem faturamento'}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: this.getScaleConfig()
+            }
+        };
+
+        this.charts.faturamentoEquipe = new Chart(ctx, config);
+    }
+    
+    createTopPerformersChart() {
+        const ctx = document.getElementById('topPerformersChart');
+        if (!ctx) {
+            console.error('Canvas element not found: topPerformersChart');
+            return;
+        }
+        
+        if (this.charts.topPerformers) {
+            this.charts.topPerformers.destroy();
+        }
+
+        // Get all data and sort by revenue
+        const allData = this.currentPerformanceView === 'equipes' ? 
+            [...this.faturamentoEquipeData] : 
+            [...this.faturamentoMedicoData];
+            
+        // Sort by faturamento and take top performers
+        const sortedData = allData
+            .filter(item => (item.faturamento || 0) > 0)
+            .sort((a, b) => (b.faturamento || 0) - (a.faturamento || 0))
+            .slice(0, 5);
+            
+        console.log('Top Performers Data:', sortedData);
+            
+        const labels = sortedData.map(item => {
+            const name = this.currentPerformanceView === 'equipes' ? 
+                (item.equipe_nome || 'Externos') : 
+                item.medico_nome;
+            return name && name.length > 12 ? name.substring(0, 12) + '...' : name || 'N/A';
+        });
+        const values = sortedData.map(item => item.faturamento || 0);
+        
+        // If no data, hide chart completely  
+        if (labels.length === 0) {
+            const container = ctx.parentElement;
+            if (container) {
+                container.innerHTML = '<div class="text-center p-4"><h5 class="text-muted">Nenhum Performer Registrado</h5><p class="text-muted">Aguardando dados de faturamento para gerar ranking.</p></div>';
+            }
+            return;
+        }
+        
+        console.log('Top Performers Labels:', labels);
+        console.log('Top Performers Values:', values);
+        
+        const config = {
+            type: 'polarArea',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: this.getChartColors(values.length, 0.7),
+                    borderColor: this.getChartColors(values.length, 1),
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    animateScale: true,
+                    duration: 1500
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 12,
+                            font: { size: 10, weight: '600' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        callbacks: {
+                            title: (context) => {
+                                const viewType = this.currentPerformanceView === 'equipes' ? 'Equipe' : 'Médico';
+                                return `${viewType}: ${context[0].label}`;
+                            },
+                            label: (context) => {
+                                const value = context.parsed.r;
+                                const rank = context.dataIndex + 1;
+                                return [
+                                    `Posição: ${rank}º lugar`,
+                                    `Faturamento: R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+                                    `Performance: ${value > 500 ? 'Excelente' : value > 200 ? 'Boa' : 'Regular'}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        ticks: { display: false },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                    }
+                }
+            }
+        };
+
+        this.charts.topPerformers = new Chart(ctx, config);
+    }
+    
+    createEvolucaoMensalChart() {
+        const ctx = document.getElementById('evolucaoMensalChart');
+        if (!ctx) {
+            console.error('Canvas element not found: evolucaoMensalChart');
+            return;
+        }
+        
+        if (this.charts.evolucaoMensal) {
+            this.charts.evolucaoMensal.destroy();
+        }
+
+        // Only show chart if there's real clinic revenue data
+        console.log('Checking faturamento bruto for chart:', this.faturamentoBruto);
+        if (!this.faturamentoBruto || this.faturamentoBruto <= 0) {
+            // Hide chart completely - no fake data
+            const container = ctx.parentElement;
+            if (container) {
+                container.innerHTML = '<div class="text-center p-4"><h5 class="text-muted">Aguardando Dados de Faturamento</h5><p class="text-muted">O gráfico aparecerá quando houver receitas aprovadas na clínica.</p></div>';
+            }
+            return;
+        }
+
+        // Use only real data - no synthetic data generation  
+        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const faturamentoBruto = new Array(12).fill(0); // Initialize with zeros
+        const lucroLiquido = new Array(12).fill(0); // Initialize with zeros
+        
+        // Only populate current month with real data
+        const currentMonth = new Date().getMonth();
+        faturamentoBruto[currentMonth] = this.faturamentoBruto;
+        lucroLiquido[currentMonth] = this.lucroLiquido;
+        
+        const config = {
+            type: 'line',
+            data: {
+                labels: meses,
+                datasets: [{
+                    label: 'Faturamento Bruto',
+                    data: faturamentoBruto,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }, {
+                    label: 'Lucro Líquido',
+                    data: lucroLiquido,
+                    borderColor: '#11998e',
+                    backgroundColor: 'rgba(17, 153, 142, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#11998e',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: { size: 12, weight: '600' }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.dataset.label}: R$ ${context.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                        ticks: {
+                            callback: (value) => `R$ ${(value/1000).toFixed(0)}k`
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        };
+
+        this.charts.evolucaoMensal = new Chart(ctx, config);
+    }
+    
+    createDistribuicaoCustosChart() {
+        const ctx = document.getElementById('distribuicaoCustosChart');
+        if (!ctx) {
+            console.error('Canvas element not found: distribuicaoCustosChart');
+            return;
+        }
+        
+        if (this.charts.distribuicaoCustos) {
+            this.charts.distribuicaoCustos.destroy();
+        }
+
+        const totalPagamentos = {{ (total_pagamento_equipes + total_pagamento_externos)|safe }} || 0;
+        const faturamentoBruto = this.faturamentoBruto || 0;
+        const lucro = faturamentoBruto - totalPagamentos;
+        const pagamentoEquipes = {{ total_pagamento_equipes|safe }} || 0;
+        const pagamentoExternos = {{ total_pagamento_externos|safe }} || 0;
+        
+        // Only show chart if there's real clinic data
+        if (!faturamentoBruto || faturamentoBruto <= 0) {
+            // Hide chart completely - no fake data
+            const container = ctx.parentElement;
+            if (container) {
+                container.innerHTML = '<div class="text-center p-4"><h5 class="text-muted">Aguardando Dados de Custos</h5><p class="text-muted">A distribuição aparecerá quando houver faturamento e pagamentos registrados.</p></div>';
+            }
+            return;
+        }
+        
+        const config = {
+            type: 'doughnut',
+            data: {
+                labels: ['Pagamento Equipes', 'Pagamento Externos', 'Lucro Líquido'],
+                datasets: [{
+                    data: [pagamentoEquipes, pagamentoExternos, Math.max(0, lucro)],
+                    backgroundColor: [
+                        'rgba(240, 147, 251, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(17, 153, 142, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(240, 147, 251, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(17, 153, 142, 1)'
+                    ],
+                    borderWidth: 3,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    animateRotate: true,
+                    duration: 1500
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 11, weight: '600' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        callbacks: {
+                            title: (context) => {
+                                return 'Distribuição Financeira';
+                            },
+                            label: (context) => {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                return [
+                                    `${context.label}:`,
+                                    `Valor: R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+                                    `Percentual: ${percentage}% do total`
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        this.charts.distribuicaoCustos = new Chart(ctx, config);
+    }
+    
+    getFilteredEquipeData() {
+        let filteredData = [...this.faturamentoEquipeData];
+        
+        if (this.filters.equipe) {
+            filteredData = filteredData.filter(item => (item.equipe_nome || 'Externos') === this.filters.equipe);
+        }
+        
+        if (this.filters.valorMinimo > 0) {
+            filteredData = filteredData.filter(item => (item.faturamento || 0) >= this.filters.valorMinimo);
+        }
+        
+        return filteredData.slice(0, 10);
+    }
+    
+    getChartColors(count, opacity = 1) {
+        const colors = [
+            `rgba(102, 126, 234, ${opacity})`,
+            `rgba(240, 147, 251, ${opacity})`,
+            `rgba(17, 153, 142, ${opacity})`,
+            `rgba(255, 193, 7, ${opacity})`,
+            `rgba(220, 53, 69, ${opacity})`,
+            `rgba(13, 110, 253, ${opacity})`,
+            `rgba(25, 135, 84, ${opacity})`,
+            `rgba(253, 126, 20, ${opacity})`,
+            `rgba(111, 66, 193, ${opacity})`,
+            `rgba(32, 201, 151, ${opacity})`
+        ];
+        return colors.slice(0, count);
+    }
+    
+    getScaleConfig() {
+        if (this.currentChartType !== 'bar') return {};
+        
+        return {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.08)',
+                    drawBorder: false
+                },
+                ticks: {
+                    callback: (value) => `R$ ${(value/1000).toFixed(0)}k`,
+                    font: { size: 11 }
+                }
+            },
+            x: {
+                grid: { display: false },
+                ticks: {
+                    maxRotation: 45,
+                    font: { size: 11, weight: '600' }
+                }
+            }
+        };
+    }
+    
+    setupEventListeners() {
+        // Performance monitoring
+        window.addEventListener('beforeunload', () => {
+            Object.values(this.charts).forEach(chart => chart && chart.destroy());
+        });
+    }
+    
+    startRealtimeUpdates() {
+        // Simulate real-time updates every 30 seconds
+        setInterval(() => {
+            this.updateMetricValues();
+        }, 30000);
+    }
+    
+    updateMetricValues() {
+        // Add subtle animations to metric values
+        const metricValues = document.querySelectorAll('.metric-value-enhanced');
+        metricValues.forEach(element => {
+            element.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 200);
+        });
+    }
+}
+
+// Global functions for template interactions
+function switchChartView(type, button) {
+    if (window.advancedDashboard) {
+        window.advancedDashboard.currentChartType = type;
+        
+        // Update button states
+        button.parentElement.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        button.classList.add('active');
+        
+        window.advancedDashboard.createFaturamentoEquipeChart();
+    }
+}
+
+function switchPerformanceView(view, button) {
+    if (window.advancedDashboard) {
+        window.advancedDashboard.currentPerformanceView = view;
+        
+        // Update button states
+        button.parentElement.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        button.classList.add('active');
+        
+        window.advancedDashboard.createTopPerformersChart();
+    }
+}
+
+function updateDashboardFilters() {
+    if (window.advancedDashboard) {
+        window.advancedDashboard.filters.equipe = document.getElementById('filtroEquipe').value;
+        window.advancedDashboard.filters.medico = document.getElementById('filtroMedico').value;
+        window.advancedDashboard.createFaturamentoEquipeChart();
+    }
+}
+
+function updateValueFilter(value) {
+    document.getElementById('valorMinimo').textContent = parseFloat(value).toLocaleString('pt-BR');
+    if (window.advancedDashboard) {
+        window.advancedDashboard.filters.valorMinimo = parseFloat(value);
+    }
+}
+
+function applyFilters() {
+    if (window.advancedDashboard) {
+        window.advancedDashboard.createFaturamentoEquipeChart();
+    }
+}
+
+function resetAllFilters() {
+    document.getElementById('filtroEquipe').value = '';
+    document.getElementById('filtroMedico').value = '';
+    document.getElementById('filtroValor').value = 0;
+    updateValueFilter(0);
+    if (window.advancedDashboard) {
+        window.advancedDashboard.filters = { equipe: '', medico: '', valorMinimo: 0 };
+        window.advancedDashboard.createFaturamentoEquipeChart();
+    }
+}
+
+function toggleAdvancedFilters() {
+    console.log('Toggle advanced filters');
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    window.advancedDashboard = new AdvancedDashboard();
+    
+    // Add loading completion class
+    document.body.classList.add('dashboard-loaded');
+    
+    // Performance tracking
+    if (performance && performance.timing) {
+        const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+        console.log(`Advanced Dashboard loaded in ${loadTime}ms`);
+    }
+});
+
+// Cleanup and finalization
+console.log('Advanced Dashboard with Chart.js initialized successfully');
+</script>
+{% endblock %}

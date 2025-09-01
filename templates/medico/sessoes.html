@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Sessões{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="fas fa-calendar-alt"></i> Minhas Sessões</h1>
+            <p class="text-muted">Gerenciar sessões dos seus pacientes</p>
+        </div>
+        <a href="{{ url_for('medico.pacientes') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-calendar-check"></i> Todas as Sessões ({{ sessoes|length }})</h5>
+        </div>
+        <div class="card-body">
+            {% if sessoes %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Paciente</th>
+                                <th>CPF</th>
+                                <th>Sessão</th>
+                                <th>Data</th>
+                                <th>Status</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sessao in sessoes %}
+                            <tr>
+                                <td data-label="Paciente">{{ sessao.paciente_nome }}</td>
+                                <td data-label="CPF">{{ sessao.cpf }}</td>
+                                <td data-label="Sessão">{{ sessao.numero_sessao }}</td>
+                                <td data-label="Data">
+                                    {% if sessao.data_sessao %}
+                                        {{ sessao.data_sessao[:16].replace(' ', ' às ') if sessao.data_sessao|length > 10 else sessao.data_sessao }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td data-label="Status">
+                                    <span class="badge bg-{{ 'success' if sessao.realizada else 'warning' }}">
+                                        {{ 'Realizada' if sessao.realizada else 'Pendente' }}
+                                    </span>
+                                </td>
+                                <td data-label="Valor">R$ {{ "%.2f"|format(sessao.valor or 0) }}</td>
+                                <td>
+                                    {% if not sessao.realizada %}
+                                    <a href="{{ url_for('medico.realizar_sessao', sessao_id=sessao.id) }}" 
+                                       class="btn btn-sm btn-success" 
+                                       onclick="return confirm('Marcar sessão como realizada?')"
+                                       title="Marcar como realizada">
+                                        <i class="fas fa-check"></i> Realizar
+                                    </a>
+                                    {% else %}
+                                    <span class="text-success">
+                                        <i class="fas fa-check-circle"></i> Concluída
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Nenhuma sessão registrada ainda</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
